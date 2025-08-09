@@ -10,4 +10,6 @@ This template should help get you started developing with Tauri, React and Types
 remove page width limit
 use antd build-in style as much as possible
 support dark mode
+use antd layout rather than custom-style <div>
+remark form item should occupy a whole row
 draw https://bkimg.cdn.bcebos.com/pic/32fa828ba61ea8d32fb99f27950a304e251f587e as svg
