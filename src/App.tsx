@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, DatePicker, Form, FormProps, Input, InputNumber, Select } from "antd";
+import { Button, DatePicker, Form, FormProps, Input, InputNumber, Select, Row, Col, Card, Space, Typography, ConfigProvider, theme } from "antd";
 import dayjs from "dayjs";
 import { FormData, Product } from "./types";
 import { CATEGORIES } from "./constants";
@@ -39,82 +39,120 @@ const App: React.FC = () => {
   }, [sourceTypeRule, form]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="w-full">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            產品管理系統
-          </h1>
-          
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-6">新增產品</h2>
-            
-            <Form
-              form={form}
-              name="productForm"
-              layout="vertical"
-              initialValues={{ 
-                remember: true,
-                date: dayjs()
+    <ConfigProvider
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: '#1890ff',
+          borderRadius: 8,
+          colorBgLayout: '#f5f5f5',
+        },
+      }}
+    >
+      <div style={{ 
+        minHeight: '100vh', 
+        backgroundColor: '#f5f5f5', 
+        padding: '24px 0' 
+      }}>
+        <div className="container">
+          <Row justify="center">
+            <Col xs={24} sm={24} md={24} lg={24} xl={20} xxl={18}>
+            <Typography.Title 
+              level={1} 
+              style={{ 
+                textAlign: 'center', 
+                marginBottom: 32,
+                color: '#262626'
               }}
-              onFinish={onFinish}
-              onFinishFailed={onFinishFailed}
-              autoComplete="off"
-              className="space-y-4"
             >
+              產品管理系統
+            </Typography.Title>
+            
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Card 
+                title="新增產品" 
+                bordered={false}
+                style={{ 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderRadius: 12
+                }}
+              >
+                <Form
+                  form={form}
+                  name="productForm"
+                  layout="vertical"
+                  initialValues={{ 
+                    remember: true,
+                    date: dayjs()
+                  }}
+                  onFinish={onFinish}
+                  onFinishFailed={onFinishFailed}
+                  autoComplete="off"
+                  size="large"
+                >
               <SourceInput 
                 form={form} 
                 onSourceTypeChange={handleSourceTypeChange} 
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Form.Item
-                  name="title"
-                  label="產品標題"
-                  rules={[{ required: true, message: "請輸入產品標題" }]}
-                >
-                  <Input placeholder="請輸入產品標題" />
-                </Form.Item>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="title"
+                    label="產品標題"
+                    rules={[{ required: true, message: "請輸入產品標題" }]}
+                  >
+                    <Input placeholder="請輸入產品標題" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="brand"
+                    label="品牌"
+                    rules={[{ required: true, message: "請輸入品牌" }]}
+                  >
+                    <Input placeholder="請輸入品牌" />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-                <Form.Item
-                  name="brand"
-                  label="品牌"
-                  rules={[{ required: true, message: "請輸入品牌" }]}
-                >
-                  <Input placeholder="請輸入品牌" />
-                </Form.Item>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Form.Item
-                  name="type"
-                  label="產品類型"
-                  rules={[{ required: true, message: "請選擇產品類型" }]}
-                >
-                  <Select
-                    placeholder="請選擇產品類型"
-                    options={CATEGORIES.map(v => ({ label: v, value: v }))}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="price"
-                  label="價格"
-                  rules={[{ required: true, message: "請輸入價格" }]}
-                >
-                  <div className="flex items-center gap-2">
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      step="0.01"
-                      stringMode
-                      precision={2}
-                      placeholder="0.00"
-                      min={0}
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="type"
+                    label="產品類型"
+                    rules={[{ required: true, message: "請選擇產品類型" }]}
+                  >
+                    <Select
+                      placeholder="請選擇產品類型"
+                      options={CATEGORIES.map(v => ({ label: v, value: v }))}
                     />
-                    <span className="text-gray-500">元</span>
-                  </div>
-                </Form.Item>
-              </div>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="price"
+                    label="價格"
+                    rules={[{ required: true, message: "請輸入價格" }]}
+                  >
+                    <Space.Compact style={{ width: '100%' }}>
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        step="0.01"
+                        stringMode
+                        precision={2}
+                        placeholder="0.00"
+                        min={0}
+                      />
+                      <Input
+                        style={{ width: 60 }}
+                        value="元"
+                        disabled
+                      />
+                    </Space.Compact>
+                  </Form.Item>
+                </Col>
+              </Row>
 
               <DiscountSection form={form} />
 
@@ -128,54 +166,64 @@ const App: React.FC = () => {
                 />
               </Form.Item>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Form.Item
-                  name="date"
-                  label="日期"
-                  initialValue={dayjs()}
-                >
-                  <DatePicker style={{ width: "100%" }} />
-                </Form.Item>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="date"
+                    label="日期"
+                    initialValue={dayjs()}
+                  >
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="remark"
+                    label="備註"
+                  >
+                    <Input.TextArea 
+                      rows={3} 
+                      placeholder="請輸入備註" 
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-                <Form.Item
-                  name="remark"
-                  label="備註"
-                >
-                  <Input.TextArea 
-                    rows={3} 
-                    placeholder="請輸入備註" 
-                  />
-                </Form.Item>
-              </div>
-
-              <Form.Item className="mb-0">
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
+              <Form.Item>
+                <Space size="middle" wrap>
                   <Button 
                     type="primary" 
                     htmlType="submit"
                     size="large"
-                    className="w-full sm:w-auto px-8"
                   >
                     提交
                   </Button>
                   <Button 
                     onClick={() => form.resetFields()}
                     size="large"
-                    className="w-full sm:w-auto px-8"
                   >
                     清空
                   </Button>
-                </div>
+                </Space>
               </Form.Item>
-            </Form>
-          </div>
+                </Form>
+              </Card>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <ProductTable data={products} />
-          </div>
+              <Card 
+                bordered={false}
+                style={{ 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderRadius: 12
+                }}
+              >
+                <ProductTable data={products} />
+              </Card>
+            </Space>
+            </Col>
+          </Row>
         </div>
       </div>
-    </div>
+    </ConfigProvider>
   );
 };
 

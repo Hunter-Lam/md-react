@@ -1,76 +1,26 @@
-/* Custom styles for the application */
+/* Custom styles - prioritize Ant Design built-in styles, use Tailwind/custom only when needed */
+
+/* Remove default margins and ensure full height */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Container class for consistent layout - only when Ant Design Row/Col isn't sufficient */
 .container {
   width: 100%;
   margin: 0 auto;
   padding: 0 1rem;
 }
 
-/* Ant Design customizations */
+/* Ant Design enhancements - only when built-in theming isn't enough */
 .ant-form-item-label > label {
   font-weight: 600;
   color: #374151;
 }
 
-.ant-input,
-.ant-input-number,
-.ant-select-selector,
-.ant-picker {
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  transition: all 0.2s ease-in-out;
-}
-
-.ant-input:hover,
-.ant-input-number:hover,
-.ant-select-selector:hover,
-.ant-picker:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.ant-input:focus,
-.ant-input-number-focused,
-.ant-select-focused .ant-select-selector,
-.ant-picker-focused {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-.ant-btn {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-}
-
-.ant-btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border: none;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-}
-
-.ant-btn-primary:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-}
-
-.ant-table {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.ant-table-thead > tr > th {
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
-  font-weight: 600;
-  color: #374151;
-}
-
-.ant-table-tbody > tr:hover > td {
-  background: #f1f5f9;
-}
-
-/* Custom animations */
+/* Custom animations for enhanced UX */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -86,78 +36,9 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Responsive design improvements */
+/* Responsive adjustments - only when Ant Design's responsive system isn't sufficient */
 @media (max-width: 768px) {
   .container {
     padding: 0 0.5rem;
   }
-  
-  .ant-form-item-label {
-    text-align: left;
-  }
-  
-  /* Better mobile table experience */
-  .ant-table {
-    font-size: 14px;
-  }
-  
-  .ant-table-thead > tr > th {
-    padding: 8px 4px;
-    font-size: 12px;
-  }
-  
-  .ant-table-tbody > tr > td {
-    padding: 8px 4px;
-    font-size: 12px;
-  }
-  
-  /* Responsive form adjustments */
-  .ant-btn {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-  
-  .ant-input,
-  .ant-input-number,
-  .ant-select-selector,
-  .ant-picker {
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 0 0.25rem;
-  }
-  
-  /* Stack form buttons vertically on very small screens */
-  .ant-form-item .ant-btn {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-  
-  /* Smaller padding for cards on mobile */
-  .bg-white.rounded-lg.shadow-md {
-    padding: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  /* Adjust title size for mobile */
-  h1 {
-    font-size: 1.5rem !important;
-  }
-  
-  h2 {
-    font-size: 1.25rem !important;
-  }
-  
-  h3 {
-    font-size: 1.125rem !important;
-  }
-}
-
-/* Ensure full width utilization */
-.w-full {
-  width: 100% !important;
-  max-width: none !important;
 }

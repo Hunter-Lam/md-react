@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Form, Select } from "antd";
+import { Button, Form, Select, Space, Flex } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { DISCOUNT_ORGANIZERS, DISCOUNT_METHODS } from "../constants";
 import DiscountInput from "./DiscountInput";
@@ -13,13 +13,14 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
     <Form.Item name="discount" label="優惠">
       <Form.List name="discount">
         {(fields, { add, remove }) => (
-          <>
+          <Space direction="vertical" style={{ width: '100%' }}>
             {fields.map(({ key, name, ...restField }) => (
-              <div key={key} className="flex items-baseline gap-1 mb-2">
+              <Flex key={key} align="baseline" gap="small" style={{ marginBottom: 8 }}>
                 <Form.Item
                   {...restField}
                   name={[name, "discountOwner"]}
                   rules={[{ required: true, message: "請選擇優惠提供者" }]}
+                  style={{ marginBottom: 0, flex: 1 }}
                 >
                   <Select 
                     placeholder="優惠提供者" 
@@ -32,6 +33,7 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                   {...restField}
                   name={[name, "discountType"]}
                   rules={[{ required: true, message: "請選擇優惠類型" }]}
+                  style={{ marginBottom: 0, flex: 1 }}
                 >
                   <Select 
                     placeholder="優惠類型" 
@@ -44,6 +46,7 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                   {...restField}
                   name={[name, "discountValue"]}
                   rules={[{ required: true, message: "請輸入優惠值" }]}
+                  style={{ marginBottom: 0, flex: 2 }}
                 >
                   <DiscountInput 
                     format={form.getFieldValue(["discount", name, "discountType"])} 
@@ -51,24 +54,27 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                 </Form.Item>
                 
                 <MinusCircleOutlined 
-                  className="text-red-500 hover:text-red-700 cursor-pointer" 
+                  style={{ 
+                    color: '#ff4d4f', 
+                    cursor: 'pointer',
+                    fontSize: 16,
+                    padding: 4
+                  }}
                   onClick={() => remove(name)} 
                 />
-              </div>
+              </Flex>
             ))}
             
-            <Form.Item noStyle>
-              <Button 
-                type="dashed" 
-                onClick={() => add()} 
-                block 
-                icon={<PlusOutlined />}
-                className="mt-2"
-              >
-                新增優惠
-              </Button>
-            </Form.Item>
-          </>
+            <Button 
+              type="dashed" 
+              onClick={() => add()} 
+              block 
+              icon={<PlusOutlined />}
+              style={{ marginTop: 8 }}
+            >
+              新增優惠
+            </Button>
+          </Space>
         )}
       </Form.List>
     </Form.Item>

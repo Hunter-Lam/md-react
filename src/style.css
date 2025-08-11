@@ -1,2 +1,8 @@
 @import "tailwindcss";
 @import "./App.css";
+
+/* Priority order for styling:
+   1. Ant Design built-in styles (preferred)
+   2. Tailwind CSS utilities (when Ant Design doesn't provide the solution)
+   3. Custom CSS (only when absolutely necessary)
+*/
