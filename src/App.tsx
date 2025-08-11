@@ -41,7 +41,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full">
           <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
             產品管理系統
           </h1>
@@ -149,19 +149,19 @@ const App: React.FC = () => {
               </div>
 
               <Form.Item className="mb-0">
-                <div className="flex items-center gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
                   <Button 
                     type="primary" 
                     htmlType="submit"
                     size="large"
-                    className="px-8"
+                    className="w-full sm:w-auto px-8"
                   >
                     提交
                   </Button>
                   <Button 
                     onClick={() => form.resetFields()}
                     size="large"
-                    className="px-8"
+                    className="w-full sm:w-auto px-8"
                   >
                     清空
                   </Button>

@@ -1,6 +1,6 @@
 /* Custom styles for the application */
 .container {
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 1rem;
 }
@@ -95,4 +95,69 @@
   .ant-form-item-label {
     text-align: left;
   }
+  
+  /* Better mobile table experience */
+  .ant-table {
+    font-size: 14px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  /* Responsive form adjustments */
+  .ant-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .ant-input,
+  .ant-input-number,
+  .ant-select-selector,
+  .ant-picker {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 0.25rem;
+  }
+  
+  /* Stack form buttons vertically on very small screens */
+  .ant-form-item .ant-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  /* Smaller padding for cards on mobile */
+  .bg-white.rounded-lg.shadow-md {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Adjust title size for mobile */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important;
+  }
+}
+
+/* Ensure full width utilization */
+.w-full {
+  width: 100% !important;
+  max-width: none !important;
 }

@@ -58,7 +58,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
           showSizeChanger: true,
           showQuickJumper: true,
         }}
-        scroll={{ x: 800 }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );
