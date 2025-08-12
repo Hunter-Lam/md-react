@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Form, Select, Space, Flex } from "antd";
+import { Button, Form, Select, Space, Flex, theme } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { DISCOUNT_ORGANIZERS, DISCOUNT_METHODS } from "../constants";
 import DiscountInput from "./DiscountInput";
@@ -9,6 +9,8 @@ interface DiscountSectionProps {
 }
 
 const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
+  const { token } = theme.useToken();
+  
   return (
     <Form.Item name="discount" label="優惠">
       <Form.List name="discount">
@@ -55,7 +57,7 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                 
                 <MinusCircleOutlined 
                   style={{ 
-                    color: '#ff4d4f', 
+                    color: token.colorError, 
                     cursor: 'pointer',
                     fontSize: 16,
                     padding: 4

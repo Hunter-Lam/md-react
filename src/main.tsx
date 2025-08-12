@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import {version as antdVersion} from "antd/package.json";
 import App from "./App";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import "./style.css";
 
 console.debug("Ant Design version:", antdVersion);
@@ -12,6 +13,8 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );

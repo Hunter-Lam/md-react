@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, TableColumnsType, Typography, Tag, Space } from "antd";
+import { Table, TableColumnsType, Typography, Tag, Space, theme } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
 import { Product } from "../types";
 
@@ -8,6 +8,8 @@ interface ProductTableProps {
 }
 
 const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
+  const { token } = theme.useToken();
+  
   const columns: TableColumnsType<Product> = [
     {
       title: "網址",
@@ -17,12 +19,12 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
       ellipsis: true,
       render: (url: string) => (
         <Space>
-          <LinkOutlined style={{ color: '#1890ff' }} />
+          <LinkOutlined style={{ color: token.colorPrimary }} />
           <a 
             href={url} 
             target="_blank" 
             rel="noopener noreferrer"
-            style={{ color: '#1890ff' }}
+            style={{ color: token.colorPrimary }}
           >
             {url}
           </a>
@@ -72,7 +74,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Typography.Title level={3} style={{ marginBottom: 16, color: '#262626' }}>
+      <Typography.Title level={3} style={{ marginBottom: 16 }}>
         產品列表
       </Typography.Title>
       <Table<Product>
@@ -90,10 +92,6 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
         scroll={{ x: 800 }}
         size="middle"
         bordered={false}
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: 8,
-        }}
       />
     </Space>
   );
