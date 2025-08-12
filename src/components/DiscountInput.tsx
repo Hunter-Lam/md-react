@@ -16,100 +16,91 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
         return (
           <Space.Compact>
             <InputNumber 
-              style={{ width: 80 }} 
               min={0} 
               max={10} 
               precision={1} 
               placeholder="折扣值" 
+              addonAfter="折" 
             />
-            <Text style={{ padding: '4px 8px', backgroundColor: token.colorFillAlter, border: `1px solid ${token.colorBorder}`, borderLeft: 0 }}>折</Text>
           </Space.Compact>
         );
       
       case "滿金額折":
         return (
-          <Space size="small" wrap>
+          <Space.Compact size="small" wrap>
             <Text>滿</Text>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="金額" 
             />
             <Text>元</Text>
             <InputNumber 
-              style={{ width: 60 }} 
-              min={0} 
+              min={0}
               max={10} 
               precision={1} 
               placeholder="折扣" 
             />
             <Text>折</Text>
-          </Space>
+          </Space.Compact>
         );
       
       case "滿件折":
         return (
-          <Space size="small" wrap>
+          <Space.Compact size="small" wrap>
             <Text>滿</Text>
             <InputNumber 
-              style={{ width: 60 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="件數" 
             />
             <Text>件</Text>
             <InputNumber 
-              style={{ width: 60 }} 
-              min={0} 
+              min={0}
               max={10} 
               precision={1} 
               placeholder="折扣" 
             />
             <Text>折</Text>
-          </Space>
+          </Space.Compact>
         );
       
       case "每滿減":
         return (
-          <Space size="small" wrap>
+          <Space.Compact size="small" wrap>
             <Text>每滿</Text>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="金額" 
             />
             <Text>元 減</Text>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="減額" 
             />
             <Text>元</Text>
-          </Space>
+          </Space.Compact>
         );
       
       case "滿減":
         return (
-          <Space size="small" wrap>
+          <Space.Compact size="small" wrap>
             <Text>滿</Text>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="金額" 
             />
             <Text>元 減</Text>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="減額" 
             />
             <Text>元</Text>
-          </Space>
+          </Space.Compact>
         );
       
       case "首購":
@@ -117,12 +108,11 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
         return (
           <Space.Compact>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               precision={0} 
               placeholder="金額" 
             />
-            <Text style={{ padding: '4px 8px', backgroundColor: '#f5f5f5', border: '1px solid #d9d9d9', borderLeft: 0 }}>元</Text>
+            <Text>元</Text>
           </Space.Compact>
         );
       
@@ -130,11 +120,9 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
         return (
           <Space.Compact>
             <InputNumber 
-              style={{ width: 80 }} 
-              min={0} 
+              min={0}
               placeholder="金額" 
             />
-            <Text style={{ padding: '4px 8px', backgroundColor: '#f5f5f5', border: '1px solid #d9d9d9', borderLeft: 0 }}>元</Text>
           </Space.Compact>
         );
       
