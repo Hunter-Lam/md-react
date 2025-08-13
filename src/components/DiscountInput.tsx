@@ -14,7 +14,7 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
     switch (format) {
       case "折扣":
         return (
-          <Space.Compact>
+          <Space.Compact size="small">
             <InputNumber 
               min={0} 
               max={10} 
@@ -27,79 +27,81 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
       
       case "滿金額折":
         return (
-          <Space.Compact size="small" wrap>
-            <Text>滿</Text>
+          <Space.Compact size="small">
             <InputNumber 
               min={0}
               precision={0} 
               placeholder="金額" 
+              addonBefore="滿"
+              addonAfter="元"
             />
-            <Text>元</Text>
             <InputNumber 
               min={0}
               max={10} 
               precision={1} 
               placeholder="折扣" 
+              addonAfter="折"
             />
-            <Text>折</Text>
           </Space.Compact>
         );
       
       case "滿件折":
         return (
-          <Space.Compact size="small" wrap>
-            <Text>滿</Text>
+          <Space.Compact size="small">
             <InputNumber 
               min={0}
               precision={0} 
               placeholder="件數" 
+              addonBefore="滿"
+              addonAfter="件"
             />
-            <Text>件</Text>
             <InputNumber 
               min={0}
               max={10} 
               precision={1} 
               placeholder="折扣" 
+              addonAfter="折"
             />
-            <Text>折</Text>
           </Space.Compact>
         );
       
       case "每滿減":
         return (
-          <Space.Compact size="small" wrap>
-            <Text>每滿</Text>
+          <Space.Compact size="small">
             <InputNumber 
               min={0}
               precision={0} 
               placeholder="金額" 
+              addonBefore="每滿"
+              addonAfter="元"
             />
-            <Text>元 減</Text>
             <InputNumber 
               min={0}
               precision={0} 
               placeholder="減額" 
+              addonBefore="減"
+              addonAfter="元"
             />
-            <Text>元</Text>
           </Space.Compact>
         );
       
       case "滿減":
         return (
-          <Space.Compact size="small" wrap>
-            <Text>滿</Text>
+          <Space.Compact size="small">
             <InputNumber 
               min={0}
               precision={0} 
               placeholder="金額" 
+              addonBefore="滿"
+              addonAfter="元"
             />
-            <Text>元 減</Text>
             <InputNumber 
               min={0}
               precision={0} 
               placeholder="減額" 
+              addonBefore="減"
+              addonAfter="元"
             />
-            <Text>元</Text>
           </Space.Compact>
         );
       
@@ -111,8 +113,8 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
               min={0}
               precision={0} 
               placeholder="金額" 
+              addonAfter="元"
             />
-            <Text>元</Text>
           </Space.Compact>
         );
       
