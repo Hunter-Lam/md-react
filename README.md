@@ -21,5 +21,13 @@ https://item.jd.com/100226972106.html
 $0.25 ---
 discountinput use addonAfter or addonBefore rather than text, like 折扣 case
 $0.25 ---
-
+wrap discount input
+$0.42 ---
 parse get product information of the URL
+$0.85 --- but do nothing
+extract formatter
+$0.6 ---
+space.compact size
+$0.1 --- can't do
+remove button style
+$0.2 ---
