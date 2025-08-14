@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button, Form, Input, Select, Space, message } from "antd";
 import { SOURCES } from "../constants";
-import { parseUrl, fetchJDProductInfo } from "../utils/urlParser";
+import { formatUrl } from "../utils/urlFormatter";
+import { fetchJDProductInfo } from "../utils/urlParser";
 
 interface SourceInputProps {
   form: any;
@@ -19,11 +20,11 @@ const SourceInput: React.FC<SourceInputProps> = ({ form, onSourceTypeChange }) =
     
     try {
       // First clean the URL
-      const parsedUrl = parseUrl(value);
-      form.setFieldValue(["source", "address"], parsedUrl);
+      const formattedUrl = formatUrl(value);
+      form.setFieldValue(["source", "address"], formattedUrl);
       
       // Check if it's a JD URL and fetch product info
-      if (parsedUrl.includes("item.jd.com")) {
+      if (formattedUrl.includes("item.jd.com")) {
         message.loading({ content: "正在獲取產品信息...", key: "fetchProduct" });
         
         const productInfo = await fetchJDProductInfo(parsedUrl);
