@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { mockTauriApi, isTauriEnvironment } from "./utils/mockTauri";
 import { FormData, Product, ProductInput } from "./types";
 import { CATEGORIES } from "./constants";
-import { SourceInput, DiscountSection, ProductTable, ThemeToggle } from "./components";
+import { SourceInput, DiscountSection, ProductTable, ThemeToggle, PriceHistoryChart } from "./components";
 import { useTheme } from "./contexts/ThemeContext";
 
 const App: React.FC = () => {
@@ -276,6 +276,8 @@ const App: React.FC = () => {
                   onDelete={handleDeleteProduct}
                 />
               </Card>
+
+              <PriceHistoryChart data={products} />
             </Space>
             </Col>
           </Row>
