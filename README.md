@@ -18,7 +18,8 @@ https://item.jd.com/100226972106.html#switch-sku
 https://item.jd.com/100226972106.html#none
 https://item.m.jd.com/product/100226972106.html?utm_term=CopyURL_shareid7c06ddc1680e7a8cf3e5adc289703cf1a014cca817550055567937_shangxiang_none&gx=RnAomzgFNWGaypkWq4x3WgwnjrEpqpM&utm_source=iosapp&utm_campaign=t_335139774&utm_medium=appshare&ad_od=share&gxd=RnAoxDRZbmCNmJkTp4QiWs2Z8UcV2CDqPCIvp4XMyzrn2tMUZeGv9ZVQhRayQlU&jkl=@D5nFc8riJPSY@
 https://item.jd.com/100226972106.html
+$0.25 ---
+discountinput use addonAfter or addonBefore rather than text, like 折扣 case
+$0.25 ---
 
 parse get product information of the URL
-
-discountinput use addonAfter or addonBefore rather than text, like 折扣 case
