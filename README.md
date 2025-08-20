@@ -33,7 +33,10 @@ remove button style
 $0.2 ---
 save data
 $1.7 ---
-draw a line chat
+draw a line chart
 $0.6 ---
 mock data
 $1.4 ---
+line chart search
+table column
+$4.12 --
