@@ -10,14 +10,13 @@ interface PriceHistoryChartProps {
 
 interface ChartDataPoint {
   date: string;
-  price: number;
-  title: string;
-  brand: string;
+  [key: string]: any; // Allow dynamic product price keys
 }
 
 const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data }) => {
   const [selectedBrand, setSelectedBrand] = React.useState<string>('all');
   const [selectedType, setSelectedType] = React.useState<string>('all');
+  const [chartMode, setChartMode] = React.useState<'combined' | 'individual'>('combined');
 
   // Get unique brands and types for filtering
   const brands = useMemo(() => {
@@ -31,7 +30,7 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data }) => {
   }, [data]);
 
   // Process data for chart
-  const chartData = useMemo(() => {
+  const { chartData, productLines } = useMemo(() => {
     let filteredData = data;
 
     // Filter by brand
@@ -44,31 +43,92 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data }) => {
       filteredData = filteredData.filter(item => item.type === selectedType);
     }
 
-    // Sort by date and format for chart
-    const processedData: ChartDataPoint[] = filteredData
-      .filter(item => item.date && item.price) // Only include items with valid date and price
-      .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf())
-      .map(item => ({
-        date: dayjs(item.date).format('YYYY-MM-DD'),
-        price: Number(item.price),
-        title: item.title,
-        brand: item.brand,
-      }));
+    if (chartMode === 'combined') {
+      // Combined mode: all data points in one line
+      const processedData: ChartDataPoint[] = filteredData
+        .filter(item => item.date && item.price)
+        .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf())
+        .map(item => ({
+          date: dayjs(item.date).format('YYYY-MM-DD'),
+          price: Number(item.price),
+          title: item.title,
+          brand: item.brand,
+        }));
 
-    return processedData;
-  }, [data, selectedBrand, selectedType]);
+      return { chartData: processedData, productLines: [] };
+    } else {
+      // Individual mode: separate lines for each product
+      const productGroups = filteredData
+        .filter(item => item.date && item.price)
+        .reduce((groups, item) => {
+          const key = item.title;
+          if (!groups[key]) {
+            groups[key] = [];
+          }
+          groups[key].push(item);
+          return groups;
+        }, {} as Record<string, Product[]>);
 
-  // Calculate average price for the period
-  const averagePrice = useMemo(() => {
-    if (chartData.length === 0) return 0;
-    const sum = chartData.reduce((acc, item) => acc + item.price, 0);
-    return sum / chartData.length;
-  }, [chartData]);
+      // Get all unique dates
+      const allDates = Array.from(new Set(
+        filteredData.map(item => dayjs(item.date).format('YYYY-MM-DD'))
+      )).sort();
+
+      // Create chart data with separate columns for each product
+      const processedData: ChartDataPoint[] = allDates.map(date => {
+        const dataPoint: ChartDataPoint = { date };
+        
+        Object.entries(productGroups).forEach(([productTitle, products]) => {
+          const productOnDate = products.find(p => dayjs(p.date).format('YYYY-MM-DD') === date);
+          if (productOnDate) {
+            dataPoint[productTitle] = Number(productOnDate.price);
+          }
+        });
+
+        return dataPoint;
+      });
+
+      const productLinesList = Object.keys(productGroups);
+      return { chartData: processedData, productLines: productLinesList };
+    }
+  }, [data, selectedBrand, selectedType, chartMode]);
+
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    if (chartData.length === 0) return { count: 0, average: 0, min: 0, max: 0 };
+    
+    let allPrices: number[] = [];
+    
+    if (chartMode === 'combined') {
+      allPrices = chartData.map(item => item.price).filter(price => price != null);
+    } else {
+      // For individual mode, collect all price values from all product lines
+      chartData.forEach(item => {
+        productLines.forEach(productLine => {
+          if (item[productLine] != null) {
+            allPrices.push(item[productLine]);
+          }
+        });
+      });
+    }
+    
+    if (allPrices.length === 0) return { count: 0, average: 0, min: 0, max: 0 };
+    
+    const sum = allPrices.reduce((acc, price) => acc + price, 0);
+    return {
+      count: allPrices.length,
+      average: sum / allPrices.length,
+      min: Math.min(...allPrices),
+      max: Math.max(...allPrices)
+    };
+  }, [chartData, chartMode, productLines]);
+
+  // Generate colors for different product lines
+  const colors = ['#1890ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13c2c2', '#faad14', '#f5222d'];
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
       return (
         <div style={{
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -78,9 +138,11 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data }) => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
         }}>
           <p style={{ margin: 0, fontWeight: 'bold' }}>{`日期: ${label}`}</p>
-          <p style={{ margin: 0, color: '#1890ff' }}>{`價格: ¥${payload[0].value.toFixed(2)}`}</p>
-          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{`品牌: ${data.brand}`}</p>
-          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{`產品: ${data.title}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ margin: 0, color: entry.color }}>
+              {`${entry.name}: ¥${entry.value?.toFixed(2) || 'N/A'}`}
+            </p>
+          ))}
         </div>
       );
     }
@@ -116,22 +178,34 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data }) => {
               ]}
             />
           </Space>
+          <Space>
+            <Typography.Text>顯示模式:</Typography.Text>
+            <Select
+              value={chartMode}
+              onChange={setChartMode}
+              style={{ width: 120 }}
+              options={[
+                { label: '合併顯示', value: 'combined' },
+                { label: '分別顯示', value: 'individual' }
+              ]}
+            />
+          </Space>
         </Space>
 
         {/* Statistics */}
         {chartData.length > 0 && (
           <Space wrap>
             <Typography.Text type="secondary">
-              數據點數: {chartData.length}
+              數據點數: {statistics.count}
             </Typography.Text>
             <Typography.Text type="secondary">
-              平均價格: ¥{averagePrice.toFixed(2)}
+              平均價格: ¥{statistics.average.toFixed(2)}
             </Typography.Text>
             <Typography.Text type="secondary">
-              最低價格: ¥{Math.min(...chartData.map(d => d.price)).toFixed(2)}
+              最低價格: ¥{statistics.min.toFixed(2)}
             </Typography.Text>
             <Typography.Text type="secondary">
-              最高價格: ¥{Math.max(...chartData.map(d => d.price)).toFixed(2)}
+              最高價格: ¥{statistics.max.toFixed(2)}
             </Typography.Text>
           </Space>
         )}
@@ -163,15 +237,31 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data }) => {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#1890ff" 
-                  strokeWidth={2}
-                  dot={{ fill: '#1890ff', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#1890ff', strokeWidth: 2 }}
-                  name="價格 (¥)"
-                />
+                {chartMode === 'combined' ? (
+                  <Line 
+                    type="monotone" 
+                    dataKey="price" 
+                    stroke="#1890ff" 
+                    strokeWidth={2}
+                    dot={{ fill: '#1890ff', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#1890ff', strokeWidth: 2 }}
+                    name="價格 (¥)"
+                  />
+                ) : (
+                  productLines.map((productLine, index) => (
+                    <Line 
+                      key={productLine}
+                      type="monotone" 
+                      dataKey={productLine} 
+                      stroke={colors[index % colors.length]} 
+                      strokeWidth={2}
+                      dot={{ fill: colors[index % colors.length], strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5, stroke: colors[index % colors.length], strokeWidth: 2 }}
+                      name={productLine}
+                      connectNulls={false}
+                    />
+                  ))
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
