@@ -5,6 +5,17 @@ export const parseUrl = (url: string): string => {
     const parsedUrl = new URL(url);
     const searchParams = parsedUrl.searchParams;
     
+    // Handle JD URLs
+    if (parsedUrl.host === "item.jd.com" || parsedUrl.host === "item.m.jd.com") {
+      // Extract product ID from pathname
+      const pathMatch = parsedUrl.pathname.match(/\/(\d+)\.html/);
+      if (pathMatch) {
+        const productId = pathMatch[1];
+        // Return clean desktop JD URL
+        return `https://item.jd.com/${productId}.html`;
+      }
+    }
+    
     if (searchParams.size === 0) {
       return url;
     }
