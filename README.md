@@ -33,3 +33,5 @@ remove button style
 $0.2 ---
 save data
 $1.7 ---
+draw a line chat
+$0.6 ---
