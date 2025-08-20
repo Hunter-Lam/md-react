@@ -10,5 +10,5 @@ export const DISCOUNT_ORGANIZERS = ["平台", "店舖", "支付"];
 
 export const DISCOUNT_METHODS = [
   "折扣", "滿金額折", "滿件折", "每滿減", 
-  "滿減", "首購", "立減"
+  "滿減", "首購", "立減", "紅包"
 ];
