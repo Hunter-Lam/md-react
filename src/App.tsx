@@ -231,6 +231,15 @@ const App: React.FC = () => {
                     />
                   </Form.Item>
                 </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="date"
+                    label="日期"
+                    initialValue={dayjs()}
+                  >
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
               </Row>
 
               <DiscountParser form={form} />
@@ -247,18 +256,6 @@ const App: React.FC = () => {
                   autoSize
                 />
               </Form.Item>
-
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    name="date"
-                    label="日期"
-                    initialValue={dayjs()}
-                  >
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
 
               <Form.Item
                 name="remark"
