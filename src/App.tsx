@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { mockTauriApi, isTauriEnvironment } from "./utils/mockTauri";
 import type { FormData, Product, ProductInput } from "./types";
 import { CATEGORIES } from "./constants";
-import { SourceInput, DiscountSection, ProductTable, ColumnController, ThemeToggle, PriceHistoryChart } from "./components";
+import { SourceInput, DiscountSection, DiscountParser, ProductTable, ColumnController, ThemeToggle, PriceHistoryChart } from "./components";
 import type { ColumnConfig } from "./components/ColumnController";
 import { useTheme } from "./contexts/ThemeContext";
 
@@ -199,25 +199,17 @@ const App: React.FC = () => {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    name="price"
-                    label="價格"
-                    rules={[{ required: true, message: "請輸入價格" }]}
+                    name="originalPrice"
+                    label="原價"
                   >
-                    <Space.Compact style={{ width: '100%' }}>
-                      <InputNumber
-                        style={{ width: "100%" }}
-                        step="0.01"
-                        stringMode
-                        precision={2}
-                        placeholder="0.00"
-                        min={0}
-                      />
-                      <Input
-                        style={{ width: 60 }}
-                        value="元"
-                        disabled
-                      />
-                    </Space.Compact>
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      step="0.01"
+                      precision={2}
+                      placeholder="0.00"
+                      min={0}
+                      addonAfter="元"
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
@@ -230,6 +222,27 @@ const App: React.FC = () => {
                   </Form.Item>
                 </Col>
               </Row>
+
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="price"
+                    label="最終價格"
+                    rules={[{ required: true, message: "請輸入最終價格" }]}
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      step="0.01"
+                      precision={2}
+                      placeholder="0.00"
+                      min={0}
+                      addonAfter="元"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <DiscountParser form={form} />
 
               <DiscountSection form={form} />
 
