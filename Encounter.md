@@ -5027,7 +5027,17 @@ git commit . --amend
 gcann! --reset-author
 git commit --all --date=now --no-edit --amend --reset-author
 
-
+---
+# https://git-scm.com/docs/git-log
+glog
+glg
+glg -i --grep='msg'
+---
+# https://git-scm.com/docs/git-diff
+gd
+gdca
+gdcw
+gds
 ---
 # https://git-scm.com/docs/git-push
 git push origin from:to -f
