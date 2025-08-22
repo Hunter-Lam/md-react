@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, Space, Typography, Popover } from 'antd';
+import { Button, Checkbox, Space, Popover } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 
 export interface ColumnConfig {

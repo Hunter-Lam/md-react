@@ -1,14 +1,11 @@
 import React from "react";
-import { InputNumber, Space, Typography, theme } from "antd";
-
-const { Text } = Typography;
+import { InputNumber, Space } from "antd";
 
 interface DiscountInputProps {
   format: string;
 }
 
 const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
-  const { token } = theme.useToken();
   
   const renderDiscountFormat = () => {
     switch (format) {

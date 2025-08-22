@@ -1,11 +1,12 @@
 import React from "react";
 import { Button, Form, Select, Space, theme } from "antd";
+import type { FormInstance } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { DISCOUNT_ORGANIZERS, DISCOUNT_METHODS } from "../constants";
 import DiscountInput from "./DiscountInput";
 
 interface DiscountSectionProps {
-  form: any;
+  form: FormInstance;
 }
 
 const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
