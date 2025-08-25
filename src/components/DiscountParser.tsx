@@ -33,8 +33,8 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         
-        // Parse final price (券後價格 or 到手價)
-        if (line === "券後" || line === "券后" || line === "到手價" || line === "到手价") {
+        // Parse final price (券後價格 or 到手價 or 秒杀价)
+        if (line === "券後" || line === "券后" || line === "到手價" || line === "到手价" || line === "秒杀价") {
           const nextLine = lines[i + 1];
           if (nextLine === "¥" && lines[i + 2]) {
             finalPrice = parseFloat(lines[i + 2]) || 0;
@@ -43,8 +43,8 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
           }
         }
         
-        // Parse original price (優惠前 or 京東價)
-        if (line === "優惠前" || line === "优惠前" || line === "京東價" || line === "京东价") {
+        // Parse original price (優惠前 or 京東價 or 超级立减活动价)
+        if (line === "優惠前" || line === "优惠前" || line === "京東價" || line === "京东价" || line === "超级立减活动价") {
           const nextLine = lines[i + 1];
           if (nextLine === "¥" && lines[i + 2]) {
             originalPrice = parseFloat(lines[i + 2]) || 0;
@@ -58,7 +58,7 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
           const price = parseFloat(line.substring(1));
           // Check if next line indicates this is original price
           const nextLine = lines[i + 1];
-          if (nextLine && (nextLine.includes("京东价") || nextLine.includes("京東價") || nextLine.includes("优惠前") || nextLine.includes("優惠前"))) {
+          if (nextLine && (nextLine.includes("京东价") || nextLine.includes("京東價") || nextLine.includes("优惠前") || nextLine.includes("優惠前") || nextLine.includes("超级立减活动价"))) {
             originalPrice = price;
           } else if (finalPrice === 0) {
             finalPrice = price;
@@ -74,11 +74,27 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
         
         // Parse end time
         if (line.includes("结束")) {
-          endTime = lines[i - 1] + " " + line;
+          if (line.includes("距结束")) {
+            // Handle "距结束 48:46:55" format
+            endTime = line;
+          } else {
+            // Handle other end time formats
+            endTime = lines[i - 1] + " " + line;
+          }
         }
         
         // Parse discounts (use else-if to prevent duplicates)
-        if (line.includes("立减") && line.includes("%")) {
+        if (line.includes("超级立减") && line.includes("%")) {
+          // Handle "超级立减10%" pattern - must come before general "立减" pattern
+          const match = line.match(/超级立减(\d+)%/);
+          if (match) {
+            discounts.push({
+              discountOwner: "店舖",
+              discountType: "折扣",
+              discountValue: (100 - parseInt(match[1])) / 10
+            });
+          }
+        } else if (line.includes("立减") && line.includes("%")) {
           const match = line.match(/立减(\d+)%省([\d.]+)元/);
           if (match) {
             // Check if it's "官方立减" (store discount) or general platform discount
@@ -87,6 +103,36 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
               discountOwner,
               discountType: "折扣",
               discountValue: (100 - parseInt(match[1])) / 10
+            });
+          }
+        } else if (line.includes("超级立减") && line.includes("元")) {
+          // Handle "超级立减4元" pattern
+          const match = line.match(/超级立减(\d+)元/);
+          if (match) {
+            discounts.push({
+              discountOwner: "店舖",
+              discountType: "立減",
+              discountValue: parseInt(match[1])
+            });
+          }
+        } else if (line.includes("每满") && line.includes("件") && line.includes("减")) {
+          // Handle "每满1件减40" pattern
+          const match = line.match(/每满(\d+)件减(\d+)/);
+          if (match) {
+            discounts.push({
+              discountOwner: "店舖",
+              discountType: "每滿減",
+              discountValue: `每满${match[1]}件减${match[2]}`
+            });
+          }
+        } else if (line.includes("满") && line.includes("件") && line.includes("折")) {
+          // Handle "满3件9.5折" pattern
+          const match = line.match(/满(\d+)件([\d.]+)折/);
+          if (match) {
+            discounts.push({
+              discountOwner: "店舖",
+              discountType: "滿件折",
+              discountValue: `满${match[1]}件${match[2]}折`
             });
           }
         } else if (line.includes("满") && line.includes("减")) {
@@ -138,6 +184,16 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
               });
             }
           }
+        } else if (line.includes("店铺新客立减") || line.includes("店舖新客立减")) {
+          // Handle "店铺新客立减3元" pattern
+          const match = line.match(/店[铺舖]新客立减(\d+)元/);
+          if (match) {
+            discounts.push({
+              discountOwner: "店舖",
+              discountType: "首購",
+              discountValue: parseInt(match[1])
+            });
+          }
         } else if (line.includes("首购礼金")) {
           const match = line.match(/首购礼金\s*(\d+)元/);
           if (match) {
@@ -165,9 +221,19 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
               discountValue: parseFloat(match[1])
             });
           }
+        } else if (line.includes("直降") && line.includes("元")) {
+          // Handle "直降3.99元" pattern - treat as "立減"
+          const match = line.match(/直降([\d.]+)元/);
+          if (match) {
+            discounts.push({
+              discountOwner: "店舖",
+              discountType: "立減",
+              discountValue: parseFloat(match[1])
+            });
+          }
         } else if (line.includes("减") && line.match(/减[¥\s]*([\d.]+)/)) {
           const match = line.match(/减[¥\s]*([\d.]+)/);
-          if (match && !line.includes("满") && !line.includes("立减")) {
+          if (match && !line.includes("满") && !line.includes("立减") && !line.includes("超级立减") && !line.includes("直降")) {
             discounts.push({
               discountOwner: "平台",
               discountType: "立減",
