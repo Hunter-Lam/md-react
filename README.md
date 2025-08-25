@@ -48,10 +48,13 @@ $2.1 ---
 clean code
 $0.9 ---
 discount parser
-$11.6 ---
+$17.7 ---
 date position
 $0.6 ---
-excel import and export
+csv export
+$0.5 ---
+excel import
+
 
 https://detail.tmall.com/item.htm?id=838057640110&skuId=5596547280623
 券后
@@ -122,3 +125,16 @@ https://detail.tmall.com/item.htm?id=589970566955
 满800减65
 超级立减4元
 满3件9.5折
+
+https://item.taobao.com/item.htm?id=673424401238&skuId=5018923614824
+券后
+¥
+189.46
+优惠前
+¥
+318
+·
+已售 8
+官方立减12%省39元
+淘金币已抵9.54元
+同店每68减20
