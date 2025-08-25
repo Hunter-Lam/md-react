@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Button, Input, Space, Typography, Card, message, Divider } from "antd";
-import { FileTextOutlined } from "@ant-design/icons";
+import { Button, Input, Space, Typography, Card, message, Divider, Alert } from "antd";
+import { FileTextOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import type { FormInstance } from "antd";
 import type { DiscountItem } from "../types";
 
@@ -15,50 +15,280 @@ interface ParsedDiscount {
   discounts: DiscountItem[];
   soldCount?: string;
   endTime?: string;
+  savings?: number;
+  savingsPercentage?: number;
+}
+
+interface ParsedLine {
+  line: string;
+  index: number;
+  processed: boolean;
 }
 
 const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts }) => {
   const [inputText, setInputText] = useState("");
   const [parsedResults, setParsedResults] = useState<ParsedDiscount[]>([]);
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+
+  // Price parsing patterns
+  const PRICE_PATTERNS = {
+    finalPrice: ["券後", "券后", "到手價", "到手价", "秒杀价", "现价", "現價"],
+    originalPrice: ["優惠前", "优惠前", "京東價", "京东价", "超级立减活动价", "原价", "原價", "市场价", "市場價"]
+  };
+
+  // Discount parsing patterns with improved regex
+  const DISCOUNT_PATTERNS = [
+    {
+      pattern: /超级立减(\d+)%/,
+      type: "折扣",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => (100 - parseInt(match[1])) / 10,
+      priority: 1
+    },
+    {
+      pattern: /立减(\d+)%省([\d.]+)元/,
+      type: "折扣",
+      owner: (line: string) => line.includes("官方立减") ? "店舖" : "平台",
+      getValue: (match: RegExpMatchArray) => (100 - parseInt(match[1])) / 10,
+      priority: 2
+    },
+    {
+      pattern: /超级立减(\d+)元/,
+      type: "立減",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
+      priority: 3
+    },
+    {
+      pattern: /每满(\d+)件减(\d+)/,
+      type: "每滿減",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => `每满${match[1]}件减${match[2]}`,
+      priority: 4
+    },
+    {
+      pattern: /满(\d+)件([\d.]+)折/,
+      type: "滿件折",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => `满${match[1]}件${match[2]}折`,
+      priority: 5
+    },
+    {
+      pattern: /满(\d+)减(\d+)/,
+      type: "滿減",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => `满${match[1]}减${match[2]}`,
+      priority: 6
+    },
+    {
+      pattern: /¥(\d+)百亿补贴/,
+      type: "立減",
+      owner: "平台",
+      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
+      priority: 7
+    },
+    {
+      pattern: /淘金币已抵([\d.]+)元/,
+      type: "紅包",
+      owner: "平台",
+      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
+      priority: 8
+    },
+    {
+      pattern: /店[铺舖]新客立减(\d+)元/,
+      type: "首購",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
+      priority: 9
+    },
+    {
+      pattern: /首购礼金\s*(\d+)元/,
+      type: "首購",
+      owner: "平台",
+      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
+      priority: 10
+    },
+    {
+      pattern: /购买立减[¥\s]*([\d.]+)/,
+      type: "立減",
+      owner: "平台",
+      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
+      priority: 11
+    },
+    {
+      pattern: /直降([\d.]+)元/,
+      type: "立減",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
+      priority: 12
+    },
+    {
+      pattern: /([\d.]+)折/,
+      type: "折扣",
+      owner: "平台",
+      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
+      priority: 13,
+      condition: (line: string) => !line.includes("满") && !line.includes("件")
+    }
+  ];
+
+  const parsePrice = (lines: string[], index: number): number => {
+    const nextLine = lines[index + 1];
+    if (nextLine === "¥" && lines[index + 2]) {
+      return parseFloat(lines[index + 2]) || 0;
+    } else if (nextLine && nextLine.startsWith("¥")) {
+      return parseFloat(nextLine.substring(1)) || 0;
+    }
+    return 0;
+  };
+
+  const parseDirectPrice = (line: string, lines: string[], index: number): { price: number; type: 'final' | 'original' | 'unknown' } => {
+    if (!line.startsWith("¥")) return { price: 0, type: 'unknown' };
+    
+    const price = parseFloat(line.substring(1));
+    if (isNaN(price)) return { price: 0, type: 'unknown' };
+
+    const nextLine = lines[index + 1];
+    if (nextLine && PRICE_PATTERNS.originalPrice.some(pattern => nextLine.includes(pattern))) {
+      return { price, type: 'original' };
+    }
+    
+    return { price, type: 'unknown' };
+  };
+
+  const parseDiscounts = (lines: string[]): DiscountItem[] => {
+    const discounts: DiscountItem[] = [];
+    const processedLines = new Set<number>();
+
+    // Sort patterns by priority
+    const sortedPatterns = [...DISCOUNT_PATTERNS].sort((a, b) => a.priority - b.priority);
+
+    lines.forEach((line, index) => {
+      if (processedLines.has(index)) return;
+
+      for (const pattern of sortedPatterns) {
+        const match = line.match(pattern.pattern);
+        if (match && (!pattern.condition || pattern.condition(line))) {
+          const owner = typeof pattern.owner === 'function' ? pattern.owner(line) : pattern.owner;
+          const value = pattern.getValue(match);
+          
+          discounts.push({
+            discountOwner: owner as any,
+            discountType: pattern.type as any,
+            discountValue: value
+          });
+          
+          processedLines.add(index);
+          break;
+        }
+      }
+    });
+
+    return discounts;
+  };
+
+  const parseGovernmentSubsidy = (lines: string[], finalPrice: number, originalPrice: number): DiscountItem[] => {
+    const subsidies: DiscountItem[] = [];
+    
+    lines.forEach(line => {
+      if (line.includes("政府补贴") || (line.includes("补贴") && !line.includes("百亿"))) {
+        const match = line.match(/补贴¥?([\d.]+)/);
+        if (match) {
+          const subsidyAmount = parseFloat(match[1]);
+          
+          if (originalPrice > 0 && finalPrice > 0) {
+            const discountPercent = Math.round((finalPrice / originalPrice) * 10) / 10;
+            subsidies.push({
+              discountOwner: "政府",
+              discountType: "折扣",
+              discountValue: discountPercent
+            });
+          } else {
+            subsidies.push({
+              discountOwner: "政府",
+              discountType: "立減",
+              discountValue: subsidyAmount
+            });
+          }
+        }
+      }
+    });
+
+    return subsidies;
+  };
+
+  const parseEndTime = (lines: string[]): string => {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes("结束")) {
+        if (line.includes("距结束")) {
+          return line;
+        } else {
+          return lines[i - 1] ? `${lines[i - 1]} ${line}` : line;
+        }
+      }
+    }
+    return "";
+  };
+
+  const parseSoldCount = (lines: string[]): string => {
+    for (const line of lines) {
+      if (line.includes("已售")) {
+        return line;
+      }
+    }
+    return "";
+  };
+
+  const calculateSavings = (originalPrice: number, finalPrice: number): { savings: number; percentage: number } => {
+    if (originalPrice <= 0 || finalPrice <= 0) return { savings: 0, percentage: 0 };
+    
+    const savings = originalPrice - finalPrice;
+    const percentage = Math.round((savings / originalPrice) * 100 * 10) / 10;
+    
+    return { savings, percentage };
+  };
+
+  const validateParsedData = (result: ParsedDiscount): string[] => {
+    const warnings: string[] = [];
+    
+    if (result.finalPrice <= 0 && result.originalPrice <= 0) {
+      warnings.push("未能識別有效的價格資訊");
+    }
+    
+    if (result.finalPrice > result.originalPrice && result.originalPrice > 0) {
+      warnings.push("最終價格高於原價，請檢查數據");
+    }
+    
+    if (result.discounts.length === 0) {
+      warnings.push("未能識別任何優惠資訊");
+    }
+    
+    return warnings;
+  };
 
   const parseDiscountText = (text: string): ParsedDiscount[] => {
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
     const results: ParsedDiscount[] = [];
-      let finalPrice = 0;
-      let originalPrice = 0;
-      const discounts: DiscountItem[] = [];
-      let soldCount = "";
-      let endTime = "";
+    const warnings: string[] = [];
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        
-        // Parse final price (券後價格 or 到手價 or 秒杀价)
-        if (line === "券後" || line === "券后" || line === "到手價" || line === "到手价" || line === "秒杀价") {
-          const nextLine = lines[i + 1];
-          if (nextLine === "¥" && lines[i + 2]) {
-            finalPrice = parseFloat(lines[i + 2]) || 0;
-          } else if (nextLine && nextLine.startsWith("¥")) {
-            finalPrice = parseFloat(nextLine.substring(1)) || 0;
-          }
-        }
-        
-        // Parse original price (優惠前 or 京東價 or 超级立减活动价)
-        if (line === "優惠前" || line === "优惠前" || line === "京東價" || line === "京东价" || line === "超级立减活动价") {
-          const nextLine = lines[i + 1];
-          if (nextLine === "¥" && lines[i + 2]) {
-            originalPrice = parseFloat(lines[i + 2]) || 0;
-          } else if (nextLine && nextLine.startsWith("¥")) {
-            originalPrice = parseFloat(nextLine.substring(1)) || 0;
-          }
-        }
-        
-        // Parse direct price format (¥2799.2, ¥189)
-        if (line.startsWith("¥") && !isNaN(parseFloat(line.substring(1)))) {
-          const price = parseFloat(line.substring(1));
-          // Check if next line indicates this is original price
-          const nextLine = lines[i + 1];
-          if (nextLine && (nextLine.includes("京东价") || nextLine.includes("京東價") || nextLine.includes("优惠前") || nextLine.includes("優惠前") || nextLine.includes("超级立减活动价"))) {
+    let finalPrice = 0;
+    let originalPrice = 0;
+
+    // Parse prices
+    lines.forEach((line, index) => {
+      // Check for price indicators
+      if (PRICE_PATTERNS.finalPrice.includes(line)) {
+        const price = parsePrice(lines, index);
+        if (price > 0) finalPrice = price;
+      } else if (PRICE_PATTERNS.originalPrice.includes(line)) {
+        const price = parsePrice(lines, index);
+        if (price > 0) originalPrice = price;
+      } else {
+        // Check for direct price format
+        const { price, type } = parseDirectPrice(line, lines, index);
+        if (price > 0) {
+          if (type === 'original') {
             originalPrice = price;
           } else if (finalPrice === 0) {
             finalPrice = price;
@@ -66,216 +296,42 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
             originalPrice = price;
           }
         }
-        
-        // Parse sold count
-        if (line.includes("已售")) {
-          soldCount = line;
-        }
-        
-        // Parse end time
-        if (line.includes("结束")) {
-          if (line.includes("距结束")) {
-            // Handle "距结束 48:46:55" format
-            endTime = line;
-          } else {
-            // Handle other end time formats
-            endTime = lines[i - 1] + " " + line;
-          }
-        }
-        
-        // Parse discounts (use else-if to prevent duplicates)
-        if (line.includes("超级立减") && line.includes("%")) {
-          // Handle "超级立减10%" pattern - must come before general "立减" pattern
-          const match = line.match(/超级立减(\d+)%/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "折扣",
-              discountValue: (100 - parseInt(match[1])) / 10
-            });
-          }
-        } else if (line.includes("立减") && line.includes("%")) {
-          const match = line.match(/立减(\d+)%省([\d.]+)元/);
-          if (match) {
-            // Check if it's "官方立减" (store discount) or general platform discount
-            const discountOwner = line.includes("官方立减") ? "店舖" : "平台";
-            discounts.push({
-              discountOwner,
-              discountType: "折扣",
-              discountValue: (100 - parseInt(match[1])) / 10
-            });
-          }
-        } else if (line.includes("超级立减") && line.includes("元")) {
-          // Handle "超级立减4元" pattern
-          const match = line.match(/超级立减(\d+)元/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "立減",
-              discountValue: parseInt(match[1])
-            });
-          }
-        } else if (line.includes("每满") && line.includes("件") && line.includes("减")) {
-          // Handle "每满1件减40" pattern
-          const match = line.match(/每满(\d+)件减(\d+)/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "每滿減",
-              discountValue: `每满${match[1]}件减${match[2]}`
-            });
-          }
-        } else if (line.includes("满") && line.includes("件") && line.includes("折")) {
-          // Handle "满3件9.5折" pattern
-          const match = line.match(/满(\d+)件([\d.]+)折/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "滿件折",
-              discountValue: `满${match[1]}件${match[2]}折`
-            });
-          }
-        } else if (line.includes("满") && line.includes("减")) {
-          const match = line.match(/满(\d+)减(\d+)/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "滿減",
-              discountValue: `满${match[1]}减${match[2]}`
-            });
-          }
-        } else if (line.includes("百亿补贴")) {
-          const match = line.match(/¥(\d+)百亿补贴/);
-          if (match) {
-            discounts.push({
-              discountOwner: "平台",
-              discountType: "立減",
-              discountValue: parseInt(match[1])
-            });
-          }
-        } else if (line.includes("淘金币已抵")) {
-          const match = line.match(/淘金币已抵([\d.]+)元/);
-          if (match) {
-            discounts.push({
-              discountOwner: "平台",
-              discountType: "紅包",
-              discountValue: parseFloat(match[1])
-            });
-          }
-        } else if (line.includes("政府补贴") || line.includes("补贴")) {
-          // For government subsidies, calculate as percentage discount
-          const match = line.match(/补贴¥?([\d.]+)/);
-          if (match) {
-            const subsidyAmount = parseFloat(match[1]);
-            // If we have both original and final prices, calculate percentage
-            if (originalPrice > 0 && finalPrice > 0) {
-              const discountPercent = Math.round((finalPrice / originalPrice) * 10) / 10;
-              discounts.push({
-                discountOwner: "政府",
-                discountType: "折扣",
-                discountValue: discountPercent
-              });
-            } else {
-              // Fallback to flat reduction if we don't have price info
-              discounts.push({
-                discountOwner: "政府",
-                discountType: "立減",
-                discountValue: subsidyAmount
-              });
-            }
-          }
-        } else if (line.includes("店铺新客立减") || line.includes("店舖新客立减")) {
-          // Handle "店铺新客立减3元" pattern
-          const match = line.match(/店[铺舖]新客立减(\d+)元/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "首購",
-              discountValue: parseInt(match[1])
-            });
-          }
-        } else if (line.includes("首购礼金")) {
-          const match = line.match(/首购礼金\s*(\d+)元/);
-          if (match) {
-            discounts.push({
-              discountOwner: "平台",
-              discountType: "首購",
-              discountValue: parseInt(match[1])
-            });
-          }
-        } else if (line.includes("购买立减")) {
-          const match = line.match(/购买立减[¥\s]*([\d.]+)/);
-          if (match) {
-            discounts.push({
-              discountOwner: "平台",
-              discountType: "立減",
-              discountValue: parseFloat(match[1])
-            });
-          }
-        } else if (line.includes("折") && line.match(/([\d.]+)折/)) {
-          const match = line.match(/([\d.]+)折/);
-          if (match) {
-            discounts.push({
-              discountOwner: "平台",
-              discountType: "折扣",
-              discountValue: parseFloat(match[1])
-            });
-          }
-        } else if (line.includes("直降") && line.includes("元")) {
-          // Handle "直降3.99元" pattern - treat as "立減"
-          const match = line.match(/直降([\d.]+)元/);
-          if (match) {
-            discounts.push({
-              discountOwner: "店舖",
-              discountType: "立減",
-              discountValue: parseFloat(match[1])
-            });
-          }
-        } else if (line.includes("减") && line.match(/减[¥\s]*([\d.]+)/)) {
-          const match = line.match(/减[¥\s]*([\d.]+)/);
-          if (match && !line.includes("满") && !line.includes("立减") && !line.includes("超级立减") && !line.includes("直降")) {
-            discounts.push({
-              discountOwner: "平台",
-              discountType: "立減",
-              discountValue: parseFloat(match[1])
-            });
-          }
-        }
       }
+    });
 
-    // Post-process government subsidies and calculate final price if needed
-    if (originalPrice > 0) {
-      // Calculate final price from government subsidy if not already set
-      if (finalPrice === 0) {
-        const govSubsidy = discounts.find(d => d.discountOwner === "政府" && d.discountType === "立減");
-        if (govSubsidy && typeof govSubsidy.discountValue === 'number') {
-          finalPrice = originalPrice - govSubsidy.discountValue;
-        }
-      }
-      
-      // Convert government subsidies to percentage discounts
-      if (finalPrice > 0) {
-        discounts.forEach(discount => {
-          if (discount.discountOwner === "政府" && discount.discountType === "立減") {
-            // Convert to percentage discount
-            const discountPercent = Math.round((finalPrice / originalPrice) * 10) / 10;
-            discount.discountType = "折扣";
-            discount.discountValue = discountPercent;
-          }
-        });
-      }
-    }
+    // Parse discounts
+    const discounts = parseDiscounts(lines);
+    
+    // Parse government subsidies
+    const govSubsidies = parseGovernmentSubsidy(lines, finalPrice, originalPrice);
+    discounts.push(...govSubsidies);
+
+    // Parse additional info
+    const endTime = parseEndTime(lines);
+    const soldCount = parseSoldCount(lines);
+
+    // Calculate savings
+    const { savings, percentage } = calculateSavings(originalPrice, finalPrice);
 
     if (finalPrice > 0 || originalPrice > 0 || discounts.length > 0) {
-      results.push({
+      const result: ParsedDiscount = {
         finalPrice,
         originalPrice,
         discounts,
         soldCount,
-        endTime
-      });
+        endTime,
+        savings,
+        savingsPercentage: percentage
+      };
+
+      // Validate and collect warnings
+      const resultWarnings = validateParsedData(result);
+      warnings.push(...resultWarnings);
+
+      results.push(result);
     }
 
+    setParseWarnings(warnings);
     return results;
   };
 
@@ -316,12 +372,14 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
     } catch (error) {
       console.error("Parse error:", error);
       message.error("解析失敗，請檢查輸入格式");
+      setParseWarnings(["解析過程中發生錯誤，請檢查輸入格式"]);
     }
   };
 
   const handleClear = () => {
     setInputText("");
     setParsedResults([]);
+    setParseWarnings([]);
   };
 
   const applyResult = (result: ParsedDiscount) => {
@@ -340,12 +398,7 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       onParsedDiscounts?.(result.discounts);
     }
     
-    console.log("Applying fields to form:", fieldsToUpdate);
-    console.log("Current form values before:", form.getFieldsValue());
-    
     form.setFieldsValue(fieldsToUpdate);
-    
-    console.log("Current form values after:", form.getFieldsValue());
     message.success("已應用該優惠資訊到表單");
   };
 
@@ -355,7 +408,7 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
         <Input.TextArea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="請貼上單個商品的優惠資訊"
+          placeholder="請貼上商品的優惠資訊，支持多種格式：&#10;• 券后/到手价/秒杀价&#10;• 优惠前/原价/京东价&#10;• 满减/立减/折扣等各种优惠&#10;• 距结束时间/已售数量等信息"
           rows={6}
           autoSize={{ minRows: 6, maxRows: 12 }}
         />
@@ -373,6 +426,23 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
             清空
           </Button>
         </Space>
+
+        {parseWarnings.length > 0 && (
+          <Alert
+            message="解析警告"
+            description={
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {parseWarnings.map((warning, index) => (
+                  <li key={index}>{warning}</li>
+                ))}
+              </ul>
+            }
+            type="warning"
+            icon={<InfoCircleOutlined />}
+            showIcon
+            closable
+          />
+        )}
 
         {parsedResults.length > 0 && (
           <>
@@ -402,6 +472,26 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
                       <Typography.Text>
                         <strong>原價:</strong> ¥{result.originalPrice}
                       </Typography.Text>
+                    )}
+                    {result.savings && result.savings > 0 && (
+                      <div>
+                        <Typography.Text type="success">
+                          <strong>節省:</strong> ¥{result.savings.toFixed(2)} ({result.savingsPercentage}% off)
+                        </Typography.Text>
+                        <br />
+                        <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                          計算式: ¥{result.finalPrice} = ¥{result.originalPrice}
+                          {result.discounts.map((discount, idx) => {
+                            if (discount.discountType === "立減" || discount.discountType === "首購" || discount.discountType === "紅包") {
+                              return ` - ¥${discount.discountValue}`;
+                            } else if (discount.discountType === "折扣") {
+                              const discountAmount = result.originalPrice * (1 - (discount.discountValue as number) / 10);
+                              return ` - ¥${(result.originalPrice - discountAmount).toFixed(2)}`;
+                            }
+                            return "";
+                          }).join("")}
+                        </Typography.Text>
+                      </div>
                     )}
                     {result.soldCount && (
                       <Typography.Text>
