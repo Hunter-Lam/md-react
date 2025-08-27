@@ -130,6 +130,20 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       priority: 11
     },
     {
+      pattern: /优惠券¥?([\d.]+)/,
+      type: "立減",
+      owner: "平台",
+      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
+      priority: 11.2
+    },
+    {
+      pattern: /满(\d+)享([\d.]+)折减([\d.]+)/,
+      type: "滿件折",
+      owner: "店舖",
+      getValue: (match: RegExpMatchArray) => `满${match[1]}件${match[2]}折`,
+      priority: 5.5
+    },
+    {
       pattern: /全场立减[¥\s]*([\d.]+)/,
       type: "立減",
       owner: "平台",
@@ -296,7 +310,9 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
     let finalPrice = 0;
     let originalPrice = 0;
 
-    // Parse prices
+    // Parse prices with enhanced logic for direct price format
+    const priceLines: { price: number; index: number }[] = [];
+    
     lines.forEach((line, index) => {
       // Check for price indicators
       if (PRICE_PATTERNS.finalPrice.includes(line)) {
@@ -305,20 +321,57 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       } else if (PRICE_PATTERNS.originalPrice.includes(line)) {
         const price = parsePrice(lines, index);
         if (price > 0) originalPrice = price;
-      } else {
-        // Check for direct price format
-        const { price, type } = parseDirectPrice(line, lines, index);
-        if (price > 0) {
-          if (type === 'original') {
-            originalPrice = price;
-          } else if (finalPrice === 0) {
-            finalPrice = price;
-          } else if (originalPrice === 0 && price > finalPrice) {
-            originalPrice = price;
+      } else if (line.startsWith("¥")) {
+        // Handle both "¥53.03" and "¥" followed by "53.03" on next line
+        const sameLine = line.match(/^¥([\d.]+)$/);
+        if (sameLine) {
+          // Price on same line as ¥ symbol
+          const price = parseFloat(sameLine[1]);
+          if (!isNaN(price) && price > 0) {
+            priceLines.push({ price, index });
+          }
+        } else if (line === "¥" && lines[index + 1]) {
+          // ¥ symbol alone, check next line for price
+          const nextLine = lines[index + 1];
+          const nextLinePrice = parseFloat(nextLine);
+          if (!isNaN(nextLinePrice) && nextLinePrice > 0) {
+            priceLines.push({ price: nextLinePrice, index: index + 1 });
           }
         }
       }
     });
+
+    // If we have direct prices but no explicit indicators, infer from context
+    if (finalPrice === 0 && originalPrice === 0 && priceLines.length > 0) {
+      if (priceLines.length >= 2) {
+        // First price is likely final price, second is likely original price
+        finalPrice = priceLines[0].price;
+        originalPrice = priceLines[1].price;
+      } else if (priceLines.length === 1) {
+        // Single price - treat as final price
+        finalPrice = priceLines[0].price;
+      }
+    } else if (finalPrice === 0 && originalPrice > 0 && priceLines.length > 0) {
+      // We have original price but no final price, find the price that's NOT the original price
+      for (const priceLine of priceLines) {
+        if (Math.abs(priceLine.price - originalPrice) > 0.01) {
+          finalPrice = priceLine.price;
+          break;
+        }
+      }
+      // If we couldn't find a different price, use the first one
+      if (finalPrice === 0) {
+        finalPrice = priceLines[0].price;
+      }
+    } else if (originalPrice === 0 && finalPrice > 0 && priceLines.length > 1) {
+      // We have final price but no original price, find the price that's NOT the final price
+      for (const priceLine of priceLines) {
+        if (Math.abs(priceLine.price - finalPrice) > 0.01) {
+          originalPrice = priceLine.price;
+          break;
+        }
+      }
+    }
 
     // Parse discounts
     const discounts = parseDiscounts(lines);
