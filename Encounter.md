@@ -6596,6 +6596,80 @@ NOTE Make sure to uncheck this option for each profile if there're multiple prof
 
 Chrome | View | Always Show Toolbar in Full Screen
 
+#### [Chrome] 301 Moved Permanently (from disk cache)
+
+When you see
+`301 Moved Permanently (from disk cache)`
+in Chrome DevTools → **Network tab**, it means Chrome didn’t actually go out to the server. Instead, it served the cached redirect response straight from the local **disk cache**.
+
+### 📂 Where is the cache saved?
+
+It depends on your OS, Chrome stores cached data in its **profile directory**:
+
+* **Windows**
+
+  ```
+  C:\Users\<YourName>\AppData\Local\Google\Chrome\User Data\Default\Cache
+  ```
+* **macOS**
+
+  ```
+  ~/Library/Caches/Google/Chrome/Default/Cache
+  ```
+* **Linux**
+
+  ```
+  ~/.cache/google-chrome/Default/Cache
+  ```
+
+(`Default` = your default Chrome profile. If you use multiple profiles, the folder name will differ, e.g., `Profile 1`.)
+
+---
+
+### 🧹 How to clear it
+
+You don’t usually need to manually delete files. Instead:
+
+1. **Clear cache via Chrome UI**
+
+   * `⋮` menu → **Settings** → **Privacy and Security** → **Clear browsing data**
+   * Choose **Cached images and files** → Clear.
+
+2. **DevTools hard refresh**
+
+   * Open DevTools (F12).
+   * Right-click the **Reload button** → choose **Empty Cache and Hard Reload**.
+
+3. **Command line (force disable cache)**
+
+   * Start Chrome with
+
+     ```
+     chrome --disable-cache
+     ```
+
+     (useful for debugging).
+
+4. **Manually delete cache files**
+
+   * Close Chrome completely.
+   * Delete the `Cache` folder from the paths above.
+   * Restart Chrome.
+
+---
+
+👉 Note: A `301` redirect is **permanently cached** by design (per HTTP spec). Even after clearing disk cache, Chrome may remember it in the **HSTS / permanent redirect cache**.
+If clearing the normal cache doesn’t fix it, you can flush that at:
+
+* Go to `chrome://net-internals/#dns` → Click **Clear host cache**.
+* Go to `chrome://net-internals/#hsts` → delete specific domains.
+
+---
+
+Do you want me to show you **how to clear just one domain’s 301 redirect** (instead of wiping all cache)?
+
+
+
 #### [Excel] Identify Duplicates Between Two Columns
 
 ```excel
