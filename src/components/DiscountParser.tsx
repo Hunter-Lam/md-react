@@ -4,6 +4,7 @@ import { FileTextOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import type { FormInstance } from "antd";
 import type { DiscountItem } from "../types";
 
+// ===== TYPES =====
 interface DiscountParserProps {
   form: FormInstance;
   onParsedDiscounts?: (discounts: DiscountItem[]) => void;
@@ -19,183 +20,256 @@ interface ParsedDiscount {
   savingsPercentage?: number;
 }
 
-interface ParsedLine {
-  line: string;
+interface PriceLine {
+  price: number;
   index: number;
-  processed: boolean;
 }
 
-const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts }) => {
-  const [inputText, setInputText] = useState("");
-  const [parsedResults, setParsedResults] = useState<ParsedDiscount[]>([]);
-  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+interface DiscountPattern {
+  pattern: RegExp;
+  type: string;
+  owner: string | ((line: string) => string);
+  getValue: (match: RegExpMatchArray) => string | number;
+  priority: number;
+  condition?: (line: string) => boolean;
+}
 
-  // Price parsing patterns
-  const PRICE_PATTERNS = {
-    finalPrice: ["券後", "券后", "到手價", "到手价", "秒杀价", "现价", "現價"],
-    originalPrice: ["優惠前", "优惠前", "京東價", "京东价", "超级立减活动价", "原价", "原價", "市场价", "市場價"]
-  };
+// ===== CONSTANTS =====
+const PRICE_PATTERNS = {
+  finalPrice: ["券後", "券后", "到手價", "到手价", "秒杀价", "现价", "現價"],
+  originalPrice: ["優惠前", "优惠前", "京東價", "京东价", "超级立减活动价", "原价", "原價", "市场价", "市場價"]
+};
 
-  // Discount parsing patterns with improved regex
-  const DISCOUNT_PATTERNS = [
-    {
-      pattern: /超级立减(\d+)%/,
-      type: "折扣",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => (100 - parseInt(match[1])) / 10,
-      priority: 1
-    },
-    {
-      pattern: /立减(\d+)%省([\d.]+)元/,
-      type: "立減",
-      owner: (line: string) => line.includes("官方立减") ? "店舖" : "平台",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[2]),
-      priority: 2
-    },
-    {
-      pattern: /超级立减(\d+)元/,
-      type: "立減",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
-      priority: 3
-    },
-    {
-      pattern: /每满(\d+)件减(\d+)/,
-      type: "每滿減",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => `每满${match[1]}件减${match[2]}`,
-      priority: 4
-    },
-    {
-      pattern: /\d+号\d+点满(\d+)减(\d+)/,
-      type: "滿減",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => `满${match[1]}减${match[2]}`,
-      priority: 6.5
-    },
-    {
-      pattern: /同店每(\d+)减(\d+)/,
-      type: "每滿減",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => `每满${match[1]}减${match[2]}`,
-      priority: 4.5
-    },
-    {
-      pattern: /满(\d+)件([\d.]+)折/,
-      type: "滿件折",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => `满${match[1]}件${match[2]}折`,
-      priority: 5
-    },
-    {
-      pattern: /满(\d+)减(\d+)/,
-      type: "滿減",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => `满${match[1]}减${match[2]}`,
-      priority: 6
-    },
-    {
-      pattern: /¥(\d+)百亿补贴/,
-      type: "立減",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
-      priority: 7
-    },
-    {
-      pattern: /淘金币已抵([\d.]+)元/,
-      type: "紅包",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
-      priority: 8
-    },
-    {
-      pattern: /店[铺舖]新客立减(\d+)元/,
-      type: "首購",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
-      priority: 9
-    },
-    {
-      pattern: /首购礼金\s*(\d+)元/,
-      type: "首購",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseInt(match[1]),
-      priority: 10
-    },
-    {
-      pattern: /购买立减[¥\s]*([\d.]+)/,
-      type: "立減",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
-      priority: 11
-    },
-    {
-      pattern: /优惠券¥?([\d.]+)/,
-      type: "立減",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
-      priority: 11.2
-    },
-    {
-      pattern: /满(\d+)享([\d.]+)折减([\d.]+)/,
-      type: "滿件折",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => `满${match[1]}件${match[2]}折`,
-      priority: 5.5
-    },
-    {
-      pattern: /全场立减[¥\s]*([\d.]+)/,
-      type: "立減",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
-      priority: 11.5
-    },
-    {
-      pattern: /直降([\d.]+)元/,
-      type: "立減",
-      owner: "店舖",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
-      priority: 12
-    },
-    {
-      pattern: /([\d.]+)折/,
-      type: "折扣",
-      owner: "平台",
-      getValue: (match: RegExpMatchArray) => parseFloat(match[1]),
-      priority: 13,
-      condition: (line: string) => !line.includes("满") && !line.includes("件")
-    }
-  ];
+const DISCOUNT_PATTERNS: DiscountPattern[] = [
+  {
+    pattern: /超级立减(\d+)%/,
+    type: "折扣",
+    owner: "店舖",
+    getValue: (match) => (100 - parseInt(match[1])) / 10,
+    priority: 1
+  },
+  {
+    pattern: /立减(\d+)%省([\d.]+)元/,
+    type: "立減",
+    owner: (line) => line.includes("官方立减") ? "店舖" : "平台",
+    getValue: (match) => parseFloat(match[2]),
+    priority: 2
+  },
+  {
+    pattern: /超级立减(\d+)元/,
+    type: "立減",
+    owner: "店舖",
+    getValue: (match) => parseInt(match[1]),
+    priority: 3
+  },
+  {
+    pattern: /每满(\d+)件减(\d+)/,
+    type: "每滿減",
+    owner: "店舖",
+    getValue: (match) => `每满${match[1]}件减${match[2]}`,
+    priority: 4
+  },
+  {
+    pattern: /同店每(\d+)减(\d+)/,
+    type: "每滿減",
+    owner: "店舖",
+    getValue: (match) => `每满${match[1]}减${match[2]}`,
+    priority: 4.5
+  },
+  {
+    pattern: /满(\d+)件([\d.]+)折/,
+    type: "滿件折",
+    owner: "店舖",
+    getValue: (match) => `满${match[1]}件${match[2]}折`,
+    priority: 5
+  },
+  {
+    pattern: /满(\d+)享([\d.]+)折减([\d.]+)/,
+    type: "滿件折",
+    owner: "店舖",
+    getValue: (match) => `满${match[1]}件${match[2]}折`,
+    priority: 5.5
+  },
+  {
+    pattern: /满(\d+)减(\d+)/,
+    type: "滿減",
+    owner: "店舖",
+    getValue: (match) => `满${match[1]}减${match[2]}`,
+    priority: 6
+  },
+  {
+    pattern: /\d+号\d+点满(\d+)减(\d+)/,
+    type: "滿減",
+    owner: "店舖",
+    getValue: (match) => `满${match[1]}减${match[2]}`,
+    priority: 6.5
+  },
+  {
+    pattern: /¥(\d+)百亿补贴/,
+    type: "立減",
+    owner: "平台",
+    getValue: (match) => parseInt(match[1]),
+    priority: 7
+  },
+  {
+    pattern: /淘金币已抵([\d.]+)元/,
+    type: "紅包",
+    owner: "平台",
+    getValue: (match) => parseFloat(match[1]),
+    priority: 8
+  },
+  {
+    pattern: /店[铺舖]新客立减(\d+)元/,
+    type: "首購",
+    owner: "店舖",
+    getValue: (match) => parseInt(match[1]),
+    priority: 9
+  },
+  {
+    pattern: /首购礼金\s*(\d+)元/,
+    type: "首購",
+    owner: "平台",
+    getValue: (match) => parseInt(match[1]),
+    priority: 10
+  },
+  {
+    pattern: /购买立减[¥\s]*([\d.]+)/,
+    type: "立減",
+    owner: "平台",
+    getValue: (match) => parseFloat(match[1]),
+    priority: 11
+  },
+  {
+    pattern: /优惠券¥?([\d.]+)/,
+    type: "立減",
+    owner: "平台",
+    getValue: (match) => parseFloat(match[1]),
+    priority: 11.2
+  },
+  {
+    pattern: /全场立减[¥\s]*([\d.]+)/,
+    type: "立減",
+    owner: "平台",
+    getValue: (match) => parseFloat(match[1]),
+    priority: 11.5
+  },
+  {
+    pattern: /直降([\d.]+)元/,
+    type: "立減",
+    owner: "店舖",
+    getValue: (match) => parseFloat(match[1]),
+    priority: 12
+  },
+  {
+    pattern: /([\d.]+)折/,
+    type: "折扣",
+    owner: "平台",
+    getValue: (match) => parseFloat(match[1]),
+    priority: 13,
+    condition: (line) => !line.includes("满") && !line.includes("件")
+  }
+];
 
-  const parsePrice = (lines: string[], index: number): number => {
+// ===== PARSING UTILITIES =====
+class PriceParser {
+  static parseExplicitPrice(lines: string[], index: number): number {
     const nextLine = lines[index + 1];
     if (nextLine === "¥" && lines[index + 2]) {
       return parseFloat(lines[index + 2]) || 0;
-    } else if (nextLine && nextLine.startsWith("¥")) {
+    } else if (nextLine?.startsWith("¥")) {
       return parseFloat(nextLine.substring(1)) || 0;
     }
     return 0;
-  };
+  }
 
-  const parseDirectPrice = (line: string, lines: string[], index: number): { price: number; type: 'final' | 'original' | 'unknown' } => {
-    if (!line.startsWith("¥")) return { price: 0, type: 'unknown' };
+  static extractDirectPrices(lines: string[]): PriceLine[] {
+    const priceLines: PriceLine[] = [];
     
-    const price = parseFloat(line.substring(1));
-    if (isNaN(price)) return { price: 0, type: 'unknown' };
+    lines.forEach((line, index) => {
+      if (!line.startsWith("¥")) return;
 
-    const nextLine = lines[index + 1];
-    if (nextLine && PRICE_PATTERNS.originalPrice.some(pattern => nextLine.includes(pattern))) {
-      return { price, type: 'original' };
+      // Skip lines that are part of discount descriptions
+      const prevLine = lines[index - 1];
+      const nextLine = lines[index + 1];
+      
+      // Skip if this appears to be part of a discount description
+      if (prevLine && (
+        prevLine.includes("购买立减") || 
+        prevLine.includes("立减") || 
+        prevLine.includes("优惠券") ||
+        prevLine.includes("减") ||
+        prevLine.includes("补贴")
+      )) {
+        return;
+      }
+
+      // Handle "¥53.03" format
+      const sameLine = line.match(/^¥([\d.]+)$/);
+      if (sameLine) {
+        const price = parseFloat(sameLine[1]);
+        if (!isNaN(price) && price > 0) {
+          priceLines.push({ price, index });
+        }
+        return;
+      }
+
+      // Handle "¥" followed by "53.03" on next line
+      if (line === "¥" && lines[index + 1]) {
+        const nextLinePrice = parseFloat(lines[index + 1]);
+        if (!isNaN(nextLinePrice) && nextLinePrice > 0) {
+          priceLines.push({ price: nextLinePrice, index: index + 1 });
+        }
+      }
+    });
+
+    return priceLines;
+  }
+
+  static assignPrices(
+    lines: string[], 
+    priceLines: PriceLine[]
+  ): { finalPrice: number; originalPrice: number } {
+    let finalPrice = 0;
+    let originalPrice = 0;
+
+    // First pass: Look for explicit price indicators
+    lines.forEach((line, index) => {
+      if (PRICE_PATTERNS.finalPrice.includes(line)) {
+        const price = this.parseExplicitPrice(lines, index);
+        if (price > 0) finalPrice = price;
+      } else if (PRICE_PATTERNS.originalPrice.includes(line)) {
+        const price = this.parseExplicitPrice(lines, index);
+        if (price > 0) originalPrice = price;
+      }
+    });
+
+    // Second pass: Infer from direct prices if needed
+    if (finalPrice === 0 && originalPrice === 0 && priceLines.length > 0) {
+      // No explicit indicators - use position-based inference
+      if (priceLines.length >= 2) {
+        finalPrice = priceLines[0].price;
+        originalPrice = priceLines[1].price;
+      } else {
+        finalPrice = priceLines[0].price;
+      }
+    } else if (finalPrice === 0 && originalPrice > 0) {
+      // Have original price, need final price
+      const differentPrice = priceLines.find(p => Math.abs(p.price - originalPrice) > 0.01);
+      finalPrice = differentPrice?.price || priceLines[0]?.price || 0;
+    } else if (originalPrice === 0 && finalPrice > 0 && priceLines.length > 1) {
+      // Have final price, need original price
+      const differentPrice = priceLines.find(p => Math.abs(p.price - finalPrice) > 0.01);
+      originalPrice = differentPrice?.price || 0;
     }
-    
-    return { price, type: 'unknown' };
-  };
 
-  const parseDiscounts = (lines: string[]): DiscountItem[] => {
+    return { finalPrice, originalPrice };
+  }
+}
+
+class DiscountParser {
+  static parseDiscounts(lines: string[]): DiscountItem[] {
     const discounts: DiscountItem[] = [];
     const processedLines = new Set<number>();
-
-    // Sort patterns by priority
     const sortedPatterns = [...DISCOUNT_PATTERNS].sort((a, b) => a.priority - b.priority);
 
     lines.forEach((line, index) => {
@@ -219,10 +293,41 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       }
     });
 
-    return discounts;
-  };
+    return this.mergeDuplicateDiscounts(discounts);
+  }
 
-  const parseGovernmentSubsidy = (lines: string[], finalPrice: number, originalPrice: number): DiscountItem[] => {
+  static mergeDuplicateDiscounts(discounts: DiscountItem[]): DiscountItem[] {
+    const merged: DiscountItem[] = [];
+    const seen = new Set<string>();
+
+    discounts.forEach(discount => {
+      // Create a key to identify potentially duplicate discounts
+      let key = '';
+      
+      if (discount.discountType === "立減" && typeof discount.discountValue === 'number') {
+        // For fixed amount discounts, use the amount as key
+        key = `${discount.discountType}-${discount.discountValue}`;
+      } else if (discount.discountType === "滿件折" && typeof discount.discountValue === 'string') {
+        // For quantity-based discounts, extract the discount rate
+        const match = discount.discountValue.match(/满(\d+)件([\d.]+)折/);
+        if (match) {
+          const quantity = parseInt(match[1]);
+          const rate = parseFloat(match[2]);
+          key = `${discount.discountType}-${quantity}-${rate}`;
+        }
+      }
+      
+      // If we haven't seen this discount before, add it
+      if (!seen.has(key) || key === '') {
+        merged.push(discount);
+        if (key !== '') seen.add(key);
+      }
+    });
+
+    return merged;
+  }
+
+  static parseGovernmentSubsidy(lines: string[], finalPrice: number, originalPrice: number): DiscountItem[] {
     const subsidies: DiscountItem[] = [];
     
     lines.forEach(line => {
@@ -250,9 +355,11 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
     });
 
     return subsidies;
-  };
+  }
+}
 
-  const parseEndTime = (lines: string[]): string => {
+class MetadataParser {
+  static parseEndTime(lines: string[]): string {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.includes("结束")) {
@@ -264,27 +371,148 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       }
     }
     return "";
-  };
+  }
 
-  const parseSoldCount = (lines: string[]): string => {
-    for (const line of lines) {
-      if (line.includes("已售")) {
-        return line;
-      }
-    }
-    return "";
-  };
+  static parseSoldCount(lines: string[]): string {
+    return lines.find(line => line.includes("已售")) || "";
+  }
+}
 
-  const calculateSavings = (originalPrice: number, finalPrice: number): { savings: number; percentage: number } => {
+class CalculationEngine {
+  static calculateSavings(originalPrice: number, finalPrice: number): { savings: number; percentage: number } {
     if (originalPrice <= 0 || finalPrice <= 0) return { savings: 0, percentage: 0 };
     
     const savings = originalPrice - finalPrice;
     const percentage = Math.round((savings / originalPrice) * 100 * 10) / 10;
     
     return { savings, percentage };
-  };
+  }
 
-  const validateParsedData = (result: ParsedDiscount): string[] => {
+  static generateCalculationFormula(result: ParsedDiscount): string {
+    let calculatedPrice = result.originalPrice;
+    const fixedDiscounts: number[] = [];
+    const percentageDiscounts: number[] = [];
+    const formulaParts: string[] = [];
+    let optimizationSuggestion = '';
+    
+    // Categorize discounts
+    result.discounts.forEach((discount) => {
+      if (discount.discountType === "立減" || discount.discountType === "首購" || discount.discountType === "紅包") {
+        if (typeof discount.discountValue === 'number') {
+          fixedDiscounts.push(discount.discountValue);
+        }
+      } else if (discount.discountType === "折扣") {
+        if (typeof discount.discountValue === 'number') {
+          percentageDiscounts.push(discount.discountValue);
+        }
+      } else if (discount.discountType === "滿減") {
+        const value = discount.discountValue as string;
+        const match = value.match(/满(\d+)减(\d+)/);
+        if (match && result.originalPrice >= parseInt(match[1])) {
+          const reduction = parseInt(match[2]);
+          fixedDiscounts.push(reduction);
+        }
+      } else if (discount.discountType === "滿件折") {
+        const value = discount.discountValue as string;
+        const match = value.match(/满(\d+)件([\d.]+)折/);
+        if (match) {
+          const minQuantity = parseInt(match[1]);
+          const discountRate = parseFloat(match[2]);
+          if (minQuantity <= 1) {
+            percentageDiscounts.push(discountRate);
+          }
+        }
+      } else if (discount.discountType === "每滿減") {
+        const value = discount.discountValue as string;
+        const itemMatch = value.match(/每满(\d+)件减(\d+)/);
+        const amountMatch = value.match(/每满(\d+)减(\d+)/);
+        
+        if (itemMatch) {
+          const minQuantity = parseInt(itemMatch[1]);
+          const reduction = parseInt(itemMatch[2]);
+          if (minQuantity <= 1) {
+            fixedDiscounts.push(reduction);
+          }
+        } else if (amountMatch) {
+          const threshold = parseInt(amountMatch[1]);
+          const reduction = parseInt(amountMatch[2]);
+          if (result.originalPrice >= threshold) {
+            const times = Math.floor(result.originalPrice / threshold);
+            const totalReduction = times * reduction;
+            fixedDiscounts.push(totalReduction);
+            
+            // Generate optimization suggestion
+            optimizationSuggestion = this.generateOptimizationSuggestion(
+              result, threshold, reduction
+            );
+          }
+        }
+      }
+    });
+    
+    // Apply percentage discounts first
+    if (percentageDiscounts.length > 0) {
+      let totalPercentage = 1;
+      percentageDiscounts.forEach(rate => {
+        totalPercentage *= (rate / 10);
+      });
+      calculatedPrice = result.originalPrice * totalPercentage;
+      formulaParts.push(`${result.originalPrice} × ${totalPercentage.toFixed(3)}`);
+    } else {
+      formulaParts.push(`${result.originalPrice}`);
+    }
+    
+    // Then subtract fixed discounts
+    fixedDiscounts.forEach(discount => {
+      calculatedPrice -= discount;
+      formulaParts.push(`${discount}`);
+    });
+    
+    const calculationFormula = formulaParts.length > 1 
+      ? `計算式: ${calculatedPrice.toFixed(2)} = ${formulaParts[0]} - ${formulaParts.slice(1).join(' - ')}`
+      : `計算式: ${calculatedPrice.toFixed(2)} = ${formulaParts[0]}`;
+    
+    const accuracyCheck = Math.abs(calculatedPrice - result.finalPrice) < 0.01 ? '✓' : `❌ (實際: ${result.finalPrice})`;
+    
+    return `${calculationFormula} ${accuracyCheck}${optimizationSuggestion ? '\n' + optimizationSuggestion : ''}`;
+  }
+
+  private static generateOptimizationSuggestion(
+    result: ParsedDiscount, 
+    threshold: number, 
+    reduction: number
+  ): string {
+    const currentUnitPrice = result.finalPrice;
+    const quantity2OriginalPrice = result.originalPrice * 2;
+    
+    let quantity2Price = quantity2OriginalPrice;
+    
+    // Apply other fixed discounts (multiply by 2 for per-item discounts)
+    result.discounts.forEach((otherDiscount) => {
+      if (otherDiscount.discountType === "立減" || otherDiscount.discountType === "首購" || otherDiscount.discountType === "紅包") {
+        if (typeof otherDiscount.discountValue === 'number') {
+          quantity2Price -= otherDiscount.discountValue * 2;
+        }
+      }
+    });
+    
+    // Apply the threshold discount for quantity 2
+    const quantity2Times = Math.floor(quantity2OriginalPrice / threshold);
+    const quantity2ThresholdReduction = quantity2Times * reduction;
+    quantity2Price -= quantity2ThresholdReduction;
+    
+    const quantity2UnitPrice = quantity2Price / 2;
+    
+    if (quantity2UnitPrice < currentUnitPrice) {
+      return `💡 优化建议: 买2件单价更低 (${quantity2UnitPrice.toFixed(2)}元/件 vs ${currentUnitPrice}元/件)`;
+    }
+    
+    return '';
+  }
+}
+
+class ValidationEngine {
+  static validateParsedData(result: ParsedDiscount): string[] {
     const warnings: string[] = [];
     
     if (result.finalPrice <= 0 && result.originalPrice <= 0) {
@@ -300,93 +528,33 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
     }
     
     return warnings;
-  };
+  }
+}
 
-  const parseDiscountText = (text: string): ParsedDiscount[] => {
+// ===== MAIN PARSER ENGINE =====
+class MainParserEngine {
+  static parseDiscountText(text: string): { results: ParsedDiscount[]; warnings: string[] } {
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
     const results: ParsedDiscount[] = [];
     const warnings: string[] = [];
 
-    let finalPrice = 0;
-    let originalPrice = 0;
-
-    // Parse prices with enhanced logic for direct price format
-    const priceLines: { price: number; index: number }[] = [];
-    
-    lines.forEach((line, index) => {
-      // Check for price indicators
-      if (PRICE_PATTERNS.finalPrice.includes(line)) {
-        const price = parsePrice(lines, index);
-        if (price > 0) finalPrice = price;
-      } else if (PRICE_PATTERNS.originalPrice.includes(line)) {
-        const price = parsePrice(lines, index);
-        if (price > 0) originalPrice = price;
-      } else if (line.startsWith("¥")) {
-        // Handle both "¥53.03" and "¥" followed by "53.03" on next line
-        const sameLine = line.match(/^¥([\d.]+)$/);
-        if (sameLine) {
-          // Price on same line as ¥ symbol
-          const price = parseFloat(sameLine[1]);
-          if (!isNaN(price) && price > 0) {
-            priceLines.push({ price, index });
-          }
-        } else if (line === "¥" && lines[index + 1]) {
-          // ¥ symbol alone, check next line for price
-          const nextLine = lines[index + 1];
-          const nextLinePrice = parseFloat(nextLine);
-          if (!isNaN(nextLinePrice) && nextLinePrice > 0) {
-            priceLines.push({ price: nextLinePrice, index: index + 1 });
-          }
-        }
-      }
-    });
-
-    // If we have direct prices but no explicit indicators, infer from context
-    if (finalPrice === 0 && originalPrice === 0 && priceLines.length > 0) {
-      if (priceLines.length >= 2) {
-        // First price is likely final price, second is likely original price
-        finalPrice = priceLines[0].price;
-        originalPrice = priceLines[1].price;
-      } else if (priceLines.length === 1) {
-        // Single price - treat as final price
-        finalPrice = priceLines[0].price;
-      }
-    } else if (finalPrice === 0 && originalPrice > 0 && priceLines.length > 0) {
-      // We have original price but no final price, find the price that's NOT the original price
-      for (const priceLine of priceLines) {
-        if (Math.abs(priceLine.price - originalPrice) > 0.01) {
-          finalPrice = priceLine.price;
-          break;
-        }
-      }
-      // If we couldn't find a different price, use the first one
-      if (finalPrice === 0) {
-        finalPrice = priceLines[0].price;
-      }
-    } else if (originalPrice === 0 && finalPrice > 0 && priceLines.length > 1) {
-      // We have final price but no original price, find the price that's NOT the final price
-      for (const priceLine of priceLines) {
-        if (Math.abs(priceLine.price - finalPrice) > 0.01) {
-          originalPrice = priceLine.price;
-          break;
-        }
-      }
-    }
+    // Extract price information
+    const priceLines = PriceParser.extractDirectPrices(lines);
+    const { finalPrice, originalPrice } = PriceParser.assignPrices(lines, priceLines);
 
     // Parse discounts
-    const discounts = parseDiscounts(lines);
-    
-    // Parse government subsidies
-    const govSubsidies = parseGovernmentSubsidy(lines, finalPrice, originalPrice);
+    const discounts = DiscountParser.parseDiscounts(lines);
+    const govSubsidies = DiscountParser.parseGovernmentSubsidy(lines, finalPrice, originalPrice);
     discounts.push(...govSubsidies);
 
-    // Parse additional info
-    const endTime = parseEndTime(lines);
-    const soldCount = parseSoldCount(lines);
+    // Parse metadata
+    const endTime = MetadataParser.parseEndTime(lines);
+    const soldCount = MetadataParser.parseSoldCount(lines);
 
     // Calculate savings
-    const { savings, percentage } = calculateSavings(originalPrice, finalPrice);
+    const { savings, percentage } = CalculationEngine.calculateSavings(originalPrice, finalPrice);
 
+    // Create result if we have meaningful data
     if (finalPrice > 0 || originalPrice > 0 || discounts.length > 0) {
       const result: ParsedDiscount = {
         finalPrice,
@@ -399,15 +567,21 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
       };
 
       // Validate and collect warnings
-      const resultWarnings = validateParsedData(result);
+      const resultWarnings = ValidationEngine.validateParsedData(result);
       warnings.push(...resultWarnings);
 
       results.push(result);
     }
 
-    setParseWarnings(warnings);
-    return results;
-  };
+    return { results, warnings };
+  }
+}
+
+// ===== REACT COMPONENT =====
+const DiscountParserComponent: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts }) => {
+  const [inputText, setInputText] = useState("");
+  const [parsedResults, setParsedResults] = useState<ParsedDiscount[]>([]);
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
 
   const handleParse = () => {
     if (!inputText.trim()) {
@@ -416,8 +590,9 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
     }
 
     try {
-      const results = parseDiscountText(inputText);
+      const { results, warnings } = MainParserEngine.parseDiscountText(inputText);
       setParsedResults(results);
+      setParseWarnings(warnings);
       
       if (results.length > 0) {
         message.success("成功解析優惠資訊");
@@ -494,7 +669,7 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
         <Input.TextArea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="請貼上商品的優惠資訊，支持多種格式：&#10;• 券后/到手价/秒杀价&#10;• 优惠前/原价/京东价&#10;• 满减/立减/折扣等各种优惠&#10;• 距结束时间/已售数量等信息"
+          placeholder="請貼上商品的優惠資訊"
           rows={6}
           autoSize={{ minRows: 6, maxRows: 12 }}
         />
@@ -556,123 +731,7 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
                         color: '#1890ff',
                         fontFamily: 'monospace'
                       }}>
-                        {(() => {
-                          // Proper calculation with correct order of operations
-                          let calculatedPrice = result.originalPrice;
-                          const fixedDiscounts: number[] = [];
-                          const percentageDiscounts: number[] = [];
-                          const formulaParts: string[] = [];
-                          let optimizationSuggestion = '';
-                          
-                          // Separate percentage and fixed discounts
-                          result.discounts.forEach((discount) => {
-                            if (discount.discountType === "立減" || discount.discountType === "首購" || discount.discountType === "紅包") {
-                              if (typeof discount.discountValue === 'number') {
-                                fixedDiscounts.push(discount.discountValue);
-                              }
-                            } else if (discount.discountType === "折扣") {
-                              if (typeof discount.discountValue === 'number') {
-                                percentageDiscounts.push(discount.discountValue);
-                              }
-                            } else if (discount.discountType === "滿減") {
-                              const value = discount.discountValue as string;
-                              const match = value.match(/满(\d+)减(\d+)/);
-                              if (match && result.originalPrice >= parseInt(match[1])) {
-                                const reduction = parseInt(match[2]);
-                                fixedDiscounts.push(reduction);
-                              }
-                            } else if (discount.discountType === "滿件折") {
-                              const value = discount.discountValue as string;
-                              const match = value.match(/满(\d+)件([\d.]+)折/);
-                              if (match) {
-                                const minQuantity = parseInt(match[1]);
-                                const discountRate = parseFloat(match[2]);
-                                // Assume quantity meets requirement for calculation
-                                if (minQuantity <= 1) {
-                                  percentageDiscounts.push(discountRate);
-                                }
-                              }
-                            } else if (discount.discountType === "每滿減") {
-                              const value = discount.discountValue as string;
-                              // Handle both "每满1件减40" and "每满68减20" patterns
-                              const itemMatch = value.match(/每满(\d+)件减(\d+)/);
-                              const amountMatch = value.match(/每满(\d+)减(\d+)/);
-                              
-                              if (itemMatch) {
-                                const minQuantity = parseInt(itemMatch[1]);
-                                const reduction = parseInt(itemMatch[2]);
-                                // For "每满1件减40", apply once for single item
-                                if (minQuantity <= 1) {
-                                  fixedDiscounts.push(reduction);
-                                }
-                              } else if (amountMatch) {
-                                const threshold = parseInt(amountMatch[1]);
-                                const reduction = parseInt(amountMatch[2]);
-                                // For "每满68减20", check if original price meets threshold
-                                if (result.originalPrice >= threshold) {
-                                  // Calculate how many times the threshold is met
-                                  const times = Math.floor(result.originalPrice / threshold);
-                                  const totalReduction = times * reduction;
-                                  fixedDiscounts.push(totalReduction);
-                                  
-                                  // Calculate optimization suggestion for buying 2 items
-                                  const currentUnitPrice = result.finalPrice;
-                                  const quantity2OriginalPrice = result.originalPrice * 2;
-                                  
-                                  // Calculate all discounts for quantity 2
-                                  let quantity2Price = quantity2OriginalPrice;
-                                  
-                                  // Apply other fixed discounts (multiply by 2 for per-item discounts)
-                                  result.discounts.forEach((otherDiscount) => {
-                                    if (otherDiscount.discountType === "立減" || otherDiscount.discountType === "首購" || otherDiscount.discountType === "紅包") {
-                                      if (typeof otherDiscount.discountValue === 'number') {
-                                        quantity2Price -= otherDiscount.discountValue * 2; // Apply to both items
-                                      }
-                                    }
-                                  });
-                                  
-                                  // Apply the threshold discount for quantity 2
-                                  const quantity2Times = Math.floor(quantity2OriginalPrice / threshold);
-                                  const quantity2ThresholdReduction = quantity2Times * reduction;
-                                  quantity2Price -= quantity2ThresholdReduction;
-                                  
-                                  const quantity2UnitPrice = quantity2Price / 2;
-                                  
-                                  if (quantity2UnitPrice < currentUnitPrice) {
-                                    optimizationSuggestion = `💡 优化建议: 买2件单价更低 (${quantity2UnitPrice.toFixed(2)}元/件 vs ${currentUnitPrice}元/件)`;
-                                  }
-                                }
-                              }
-                            }
-                          });
-                          
-                          // Apply percentage discounts first (multiply original price)
-                          if (percentageDiscounts.length > 0) {
-                            // Apply all percentage discounts
-                            let totalPercentage = 1;
-                            percentageDiscounts.forEach(rate => {
-                              totalPercentage *= (rate / 10);
-                            });
-                            calculatedPrice = result.originalPrice * totalPercentage;
-                            formulaParts.push(`${result.originalPrice} × ${totalPercentage.toFixed(3)}`);
-                          } else {
-                            formulaParts.push(`${result.originalPrice}`);
-                          }
-                          
-                          // Then subtract fixed discounts
-                          fixedDiscounts.forEach(discount => {
-                            calculatedPrice -= discount;
-                            formulaParts.push(`${discount}`);
-                          });
-                          
-                          const calculationFormula = formulaParts.length > 1 
-                            ? `計算式: ${calculatedPrice.toFixed(2)} = ${formulaParts[0]} - ${formulaParts.slice(1).join(' - ')}`
-                            : `計算式: ${calculatedPrice.toFixed(2)} = ${formulaParts[0]}`;
-                          
-                          const accuracyCheck = Math.abs(calculatedPrice - result.finalPrice) < 0.01 ? '✓' : `❌ (實際: ${result.finalPrice})`;
-                          
-                          return `${calculationFormula} ${accuracyCheck}${optimizationSuggestion ? '\n' + optimizationSuggestion : ''}`;
-                        })()}
+                        {CalculationEngine.generateCalculationFormula(result)}
                       </Typography.Text>
                     )}
                     {result.finalPrice > 0 && (
@@ -706,7 +765,6 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
                         <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
                           {result.discounts
                             .sort((a, b) => {
-                              // Sort by priority (lower priority number = higher importance)
                               const getPriority = (discount: any) => {
                                 const pattern = DISCOUNT_PATTERNS.find(p => 
                                   p.type === discount.discountType && 
@@ -735,4 +793,4 @@ const DiscountParser: React.FC<DiscountParserProps> = ({ form, onParsedDiscounts
   );
 };
 
-export default DiscountParser;
+export default DiscountParserComponent;
