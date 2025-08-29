@@ -12,9 +12,10 @@
   "app": {
     "windows": [
       {
-        "title": "md-react",
-        "width": 800,
-        "height": 600
+        "title": "產品管理系統 - md-react",
+        "width": 1200,
+        "height": 800,
+        "devtools": true
       }
     ],
     "security": {
