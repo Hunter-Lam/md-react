@@ -5245,6 +5245,16 @@ To use this command, you need to have GPG set up and configured with Git. If you
 
 After setting up GPG, you can use the `git commit --amend -S` command to amend and sign your commits.
 
+#### [Git] gpg key remove
+
+```shell
+gpg --list-secret-keys --keyid-format=long
+gpg --delete-secret-keys <key-id>
+
+Delete this key from the keyring? (y/N) y
+This is a secret key! - really delete? (y/N) y
+```
+
 #### [Git] (NotRecommanded) irt - interactive-rebase-tool
 
 [MitMaro/git-interactive-rebase-tool: Native cross-platform full feature terminal-based sequence editor for git interactive rebase.](https://github.com/MitMaro/git-interactive-rebase-tool)
