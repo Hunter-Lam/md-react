@@ -6,6 +6,35 @@ This template should help get you started developing with Tauri, React and Types
 
 - [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
+## Prerequisites
+
+```shell
+curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+1) Proceed with standard installation (default - just press enter)
+2) Customize installation
+3) Cancel installation
+
+# select 1)
+```
+
+```shell
+error: could not amend shell profile: '~/.profile': could not write rcfile file: '~/.profile': Permission denied (os error 13)
+```
+
+```shell
+To get started you need Cargo's bin directory ($HOME/.cargo/bin) in your PATH
+environment variable. This has not been done automatically.
+
+To configure your current shell, you need to source
+the corresponding env file under $HOME/.cargo.
+
+This is usually done by running one of the following (note the leading DOT):
+. "$HOME/.cargo/env"            # For sh/bash/zsh/ash/dash/pdksh
+source "$HOME/.cargo/env.fish"  # For fish
+source $"($nu.home-path)/.cargo/env.nu"  # For nushell
+```
+
+
 ## TODO 
 remove page width limit
 use antd build-in style as much as possible
