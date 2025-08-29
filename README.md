@@ -48,7 +48,7 @@ $2.1 ---
 clean code
 $0.9 ---
 discount parser
-$24.771 ---
+$45.32 ---
 date position
 $0.6 ---
 csv export
