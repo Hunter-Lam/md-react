@@ -61,7 +61,7 @@ $0.1 --- can't do
 remove button style
 $0.2 ---
 save data
-$1.7 ---
+$5.6 ---
 draw a line chart
 $0.6 ---
 mock data
