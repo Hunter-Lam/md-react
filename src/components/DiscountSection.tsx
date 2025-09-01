@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Form, Select, Space, Flex, theme } from "antd";
+import { Button, Form, Select, Space, theme } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { DISCOUNT_ORGANIZERS, DISCOUNT_METHODS } from "../constants";
 import DiscountInput from "./DiscountInput";
@@ -17,17 +17,18 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
         {(fields, { add, remove }) => (
           <Space direction="vertical" style={{ width: '100%' }}>
             {fields.map(({ key, name, ...restField }) => (
-              <Flex key={key} align="baseline" gap="small" style={{ marginBottom: 8 }}>
+              <Space key={key} wrap style={{ marginBottom: 8, width: '100%' }}>
                 <Form.Item
                   {...restField}
                   name={[name, "discountOwner"]}
                   rules={[{ required: true, message: "請選擇優惠提供者" }]}
-                  style={{ marginBottom: 0, flex: 1 }}
+                  style={{ marginBottom: 0, minWidth: 120 }}
                 >
                   <Select 
                     placeholder="優惠提供者" 
                     popupMatchSelectWidth={false} 
                     options={DISCOUNT_ORGANIZERS.map(v => ({ label: v, value: v }))}
+                    style={{ width: 120 }}
                   />
                 </Form.Item>
                 
@@ -35,12 +36,13 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                   {...restField}
                   name={[name, "discountType"]}
                   rules={[{ required: true, message: "請選擇優惠類型" }]}
-                  style={{ marginBottom: 0, flex: 1 }}
+                  style={{ marginBottom: 0, minWidth: 120 }}
                 >
                   <Select 
                     placeholder="優惠類型" 
                     popupMatchSelectWidth={false} 
                     options={DISCOUNT_METHODS.map(v => ({ label: v, value: v }))}
+                    style={{ width: 120 }}
                   />
                 </Form.Item>
                 
@@ -48,7 +50,7 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                   {...restField}
                   name={[name, "discountValue"]}
                   rules={[{ required: true, message: "請輸入優惠值" }]}
-                  style={{ marginBottom: 0, flex: 2 }}
+                  style={{ marginBottom: 0, minWidth: 200 }}
                 >
                   <DiscountInput 
                     format={form.getFieldValue(["discount", name, "discountType"])} 
@@ -64,7 +66,7 @@ const DiscountSection: React.FC<DiscountSectionProps> = ({ form }) => {
                   }}
                   onClick={() => remove(name)} 
                 />
-              </Flex>
+              </Space>
             ))}
             
             <Button 
