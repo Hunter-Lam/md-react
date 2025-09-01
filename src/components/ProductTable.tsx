@@ -180,7 +180,6 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete }) => {
         dataSource={data}
         rowKey={(record) => record.id?.toString() || record.url}
         pagination={{
-          pageSize: 10,
           showSizeChanger: true,
           showQuickJumper: true,
           responsive: true,
