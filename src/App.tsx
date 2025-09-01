@@ -178,18 +178,17 @@ const App: React.FC = () => {
                     <DatePicker style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    name="remark"
-                    label="備註"
-                  >
-                    <Input.TextArea 
-                      rows={3} 
-                      placeholder="請輸入備註" 
-                    />
-                  </Form.Item>
-                </Col>
               </Row>
+
+              <Form.Item
+                name="remark"
+                label="備註"
+              >
+                <Input.TextArea 
+                  rows={3} 
+                  placeholder="請輸入備註" 
+                />
+              </Form.Item>
 
               <Form.Item>
                 <Space size="middle" wrap>
