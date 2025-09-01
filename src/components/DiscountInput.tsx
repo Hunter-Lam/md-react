@@ -19,7 +19,7 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
               min={0} 
               max={10} 
               precision={1} 
-              placeholder="折扣值" 
+              placeholder="折扣" 
               addonAfter="折" 
             />
           </Space.Compact>
@@ -107,8 +107,9 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
       
       case "首購":
       case "立減":
+      case "紅包":
         return (
-          <Space.Compact>
+          <Space.Compact size="small">
             <InputNumber 
               min={0}
               precision={0} 
@@ -117,18 +118,8 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
             />
           </Space.Compact>
         );
-      
-      case "紅包":
-        return (
-          <Space.Compact>
-            <InputNumber 
-              min={0}
-              placeholder="金額" 
-            />
-          </Space.Compact>
-        );
-      
-      default:
+
+    default:
         return null;
     }
   };
