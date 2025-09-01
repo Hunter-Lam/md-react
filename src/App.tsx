@@ -199,21 +199,6 @@ const App: React.FC = () => {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    name="originalPrice"
-                    label="原價"
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      step="0.01"
-                      precision={2}
-                      placeholder="0.00"
-                      min={0}
-                      addonAfter="元"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item
                     name="date"
                     label="日期"
                     initialValue={dayjs()}
@@ -224,6 +209,21 @@ const App: React.FC = () => {
               </Row>
 
               <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                      name="originalPrice"
+                      label="原價"
+                  >
+                    <InputNumber
+                        style={{ width: "100%" }}
+                        step="0.01"
+                        precision={2}
+                        placeholder="0.00"
+                        min={0}
+                        addonAfter="元"
+                    />
+                  </Form.Item>
+                </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="price"
