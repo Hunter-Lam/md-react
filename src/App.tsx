@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button, DatePicker, Form, FormProps, Input, InputNumber, Select, Row, Col, Card, Space, Typography, ConfigProvider, theme, message } from "antd";
 import dayjs from "dayjs";
 import { invoke } from "@tauri-apps/api/core";
 import { mockTauriApi, isTauriEnvironment } from "./utils/mockTauri";
-import { FormData, Product, ProductInput } from "./types";
+import type { FormData, Product, ProductInput } from "./types";
 import { CATEGORIES } from "./constants";
 import { SourceInput, DiscountSection, ProductTable, ColumnController, ThemeToggle, PriceHistoryChart } from "./components";
 import type { ColumnConfig } from "./components/ColumnController";
@@ -11,9 +11,8 @@ import { useTheme } from "./contexts/ThemeContext";
 
 const App: React.FC = () => {
   const { isDarkMode } = useTheme();
-  const { token } = theme.useToken();
   const [form] = Form.useForm();
-  const [sourceTypeRule, setSourceTypeRule] = useState<any[]>([{ type: "url" }]);
+  const [sourceTypeRule, setSourceTypeRule] = useState<Array<{ type: string }>>([{ type: "url" }]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -31,12 +30,7 @@ const App: React.FC = () => {
     { key: "action", title: "操作", visible: true },
   ]);
 
-  // Load products from database on component mount
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const api = isTauriEnvironment() ? { invoke } : mockTauriApi;
       const result = await api.invoke<Product[]>("get_products");
@@ -45,7 +39,12 @@ const App: React.FC = () => {
       console.error("Failed to load products:", error);
       message.error("加載產品失敗");
     }
-  };
+  }, []);
+
+  // Load products from database on component mount
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const onFinish: FormProps<FormData>["onFinish"] = async (values) => {
     console.log("表單提交成功:", values);
@@ -88,11 +87,11 @@ const App: React.FC = () => {
     console.log("表單提交失敗:", errorInfo);
   };
 
-  const handleSourceTypeChange = (rule: any[]) => {
+  const handleSourceTypeChange = useCallback((rule: Array<{ type: string }>) => {
     setSourceTypeRule(rule);
-  };
+  }, []);
 
-  const handleDeleteProduct = async (id: number) => {
+  const handleDeleteProduct = useCallback(async (id: number) => {
     try {
       const api = isTauriEnvironment() ? { invoke } : mockTauriApi;
       await api.invoke("delete_product", { id });
@@ -102,7 +101,7 @@ const App: React.FC = () => {
       console.error("Failed to delete product:", error);
       message.error("刪除產品失敗");
     }
-  };
+  }, []);
 
   useEffect(() => {
     form.validateFields([["source", "address"]]);

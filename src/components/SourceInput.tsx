@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Button, Form, Input, Select, message } from "antd";
+import type { FormInstance } from "antd";
 import { SOURCES } from "../constants";
 import { formatUrl } from "../utils/urlFormatter";
 import { fetchJDProductInfo } from "../utils/urlParser";
 
 interface SourceInputProps {
-  form: any;
-  onSourceTypeChange: (rule: any[]) => void;
+  form: FormInstance;
+  onSourceTypeChange: (rule: Array<{ type: string }>) => void;
 }
 
 const SourceInput: React.FC<SourceInputProps> = ({ form, onSourceTypeChange }) => {

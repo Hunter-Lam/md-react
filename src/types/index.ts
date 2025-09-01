@@ -1,9 +1,12 @@
+import type { Dayjs } from 'dayjs';
+import type { SourceType, CategoryType, DiscountOrganizerType, DiscountMethodType } from '../constants';
+
 export interface Product {
   id?: number;
   url: string;
   title: string;
   brand: string;
-  type: string;
+  type: CategoryType;
   price: number;
   specification?: string;
   date: string;
@@ -15,7 +18,7 @@ export interface ProductInput {
   url: string;
   title: string;
   brand: string;
-  type: string;
+  type: CategoryType;
   price: number;
   specification?: string;
   date: string;
@@ -23,22 +26,24 @@ export interface ProductInput {
 }
 
 export interface DiscountItem {
-  discountOwner: string;
-  discountType: string;
-  discountValue: any;
+  discountOwner: DiscountOrganizerType;
+  discountType: DiscountMethodType;
+  discountValue: string | number;
+}
+
+export interface SourceData {
+  type: SourceType;
+  address: string;
 }
 
 export interface FormData {
-  source: {
-    type: string;
-    address: string;
-  };
+  source: SourceData;
   title: string;
   brand: string;
-  type: string;
+  type: CategoryType;
   price: number;
   discount: DiscountItem[];
   specification: string;
-  date: any;
+  date: Dayjs;
   remark: string;
 }
