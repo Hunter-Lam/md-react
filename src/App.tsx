@@ -5,7 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { mockTauriApi, isTauriEnvironment } from "./utils/mockTauri";
 import { FormData, Product, ProductInput } from "./types";
 import { CATEGORIES } from "./constants";
-import { SourceInput, DiscountSection, ProductTable, ThemeToggle, PriceHistoryChart } from "./components";
+import { SourceInput, DiscountSection, ProductTable, ColumnController, ThemeToggle, PriceHistoryChart } from "./components";
+import type { ColumnConfig } from "./components/ColumnController";
 import { useTheme } from "./contexts/ThemeContext";
 
 const App: React.FC = () => {
@@ -15,6 +16,20 @@ const App: React.FC = () => {
   const [sourceTypeRule, setSourceTypeRule] = useState<any[]>([{ type: "url" }]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Column visibility configuration
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([
+    { key: "id", title: "ID", visible: true },
+    { key: "title", title: "產品標題", visible: true },
+    { key: "brand", title: "品牌", visible: true },
+    { key: "type", title: "類型", visible: true },
+    { key: "price", title: "價格", visible: true },
+    { key: "specification", title: "規格", visible: true },
+    { key: "date", title: "日期", visible: true },
+    { key: "remark", title: "備註", visible: true },
+    { key: "created_at", title: "創建時間", visible: true },
+    { key: "action", title: "操作", visible: true },
+  ]);
 
   // Load products from database on component mount
   useEffect(() => {
@@ -274,6 +289,13 @@ const App: React.FC = () => {
                 <ProductTable 
                   data={products} 
                   onDelete={handleDeleteProduct}
+                  visibleColumns={columnConfig}
+                  columnController={
+                    <ColumnController
+                      columns={columnConfig}
+                      onColumnChange={setColumnConfig}
+                    />
+                  }
                 />
               </Card>
 

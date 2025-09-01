@@ -1,15 +1,18 @@
 import React, { useMemo } from "react";
-import { Table, TableColumnsType, Typography, Tag, Space, Button, Popconfirm } from "antd";
+import { Table, TableColumnsType, Typography, Tag, Space, Button, Popconfirm, Row, Col } from "antd";
 import { LinkOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Product } from "../types";
+import { ColumnConfig } from "./ColumnController";
 import dayjs from "dayjs";
 
 interface ProductTableProps {
   data?: Product[];
   onDelete?: (id: number) => void;
+  visibleColumns?: ColumnConfig[];
+  columnController?: React.ReactNode;
 }
 
-const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete }) => {
+const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete, visibleColumns, columnController }) => {
   // Generate filter options from data
   const filterOptions = useMemo(() => {
     const brands = Array.from(new Set(data.map(item => item.brand))).sort();
@@ -170,13 +173,37 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete }) => {
     },
   ];
 
+  // Filter columns based on visibility settings
+  const filteredColumns = useMemo(() => {
+    if (!visibleColumns) return columns;
+    
+    const visibilityMap = visibleColumns.reduce((acc, col) => {
+      acc[col.key] = col.visible;
+      return acc;
+    }, {} as Record<string, boolean>);
+
+    return columns.filter(column => {
+      const key = column.key as string;
+      return visibilityMap[key] !== false; // Show column if not explicitly hidden
+    });
+  }, [columns, visibleColumns]);
+
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Typography.Title level={3} style={{ marginBottom: 16 }}>
-        產品列表 ({data.length} 項)
-      </Typography.Title>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Col>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            產品列表 ({data.length} 項)
+          </Typography.Title>
+        </Col>
+        {columnController && (
+          <Col>
+            {columnController}
+          </Col>
+        )}
+      </Row>
       <Table<Product>
-        columns={columns}
+        columns={filteredColumns}
         dataSource={data}
         rowKey={(record) => record.id?.toString() || record.url}
         pagination={{
