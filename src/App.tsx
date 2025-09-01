@@ -165,6 +165,7 @@ const App: React.FC = () => {
                 <Input.TextArea 
                   rows={3} 
                   placeholder="請輸入產品規格說明" 
+                  autoSize
                 />
               </Form.Item>
 
@@ -187,6 +188,7 @@ const App: React.FC = () => {
                 <Input.TextArea 
                   rows={3} 
                   placeholder="請輸入備註" 
+                  autoSize
                 />
               </Form.Item>
 
