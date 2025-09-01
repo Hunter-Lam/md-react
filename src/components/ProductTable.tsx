@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
-import { Table, TableColumnsType, Typography, Tag, Space, Button, Popconfirm, Row, Col } from "antd";
-import { LinkOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Table, TableColumnsType, Typography, Tag, Space, Button, Popconfirm, Row, Col, message } from "antd";
+import { LinkOutlined, DeleteOutlined, DownloadOutlined } from "@ant-design/icons";
 import { Product } from "../types";
 import { ColumnConfig } from "./ColumnController";
+import { exportToCSV, getVisibleColumnKeys } from "../utils/csvExport";
 import dayjs from "dayjs";
 
 interface ProductTableProps {
@@ -25,6 +26,26 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete, visibl
       titles: titles.map(title => ({ text: title, value: title }))
     };
   }, [data]);
+
+  // CSV export function
+  const handleExportCSV = () => {
+    if (data.length === 0) {
+      message.warning("沒有數據可以導出");
+      return;
+    }
+
+    try {
+      const visibleColumnKeys = getVisibleColumnKeys(visibleColumns);
+      exportToCSV(data, {
+        filename: '產品列表',
+        visibleColumns: visibleColumnKeys
+      });
+      message.success(`成功導出 ${data.length} 項產品數據`);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      message.error('導出失敗，請重試');
+    }
+  };
 
   const columns: TableColumnsType<Product> = [
     {
@@ -196,11 +217,19 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete, visibl
             產品列表 ({data.length} 項)
           </Typography.Title>
         </Col>
-        {columnController && (
-          <Col>
+        <Col>
+          <Space>
+            <Button
+              type="default"
+              icon={<DownloadOutlined />}
+              onClick={handleExportCSV}
+              disabled={data.length === 0}
+            >
+              導出 CSV
+            </Button>
             {columnController}
-          </Col>
-        )}
+          </Space>
+        </Col>
       </Row>
       <Table<Product>
         columns={filteredColumns}
