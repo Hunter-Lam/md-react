@@ -32,9 +32,20 @@ const App: React.FC = () => {
 
   const loadProducts = useCallback(async () => {
     try {
-      const api = isTauriEnvironment() ? { invoke } : mockTauriApi;
+      const isTauri = isTauriEnvironment();
+      console.log("Environment detection:", {
+        isTauri,
+        hasWindow: typeof window !== 'undefined',
+        hasTauriObject: typeof window !== 'undefined' && !!(window as any).__TAURI__,
+        hasTauriInternals: typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__,
+        hasTauriMetadata: typeof window !== 'undefined' && !!(window as any).__TAURI_METADATA__,
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A'
+      });      
+      const api = isTauri ? { invoke } : mockTauriApi;
       const result = await api.invoke<Product[]>("get_products");
       setProducts(result);
+      
+      console.log("Loaded products count:", result.length);
     } catch (error) {
       console.error("Failed to load products:", error);
       message.error("加載產品失敗");

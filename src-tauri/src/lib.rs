@@ -1,7 +1,8 @@
 use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{State, Manager};
+use std::env;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Product {
@@ -35,7 +36,16 @@ pub struct DatabaseState {
 
 impl DatabaseState {
     pub fn new() -> Result<Self> {
-        let conn = Connection::open("products.db")?;
+        // Get the current working directory
+        let current_dir = env::current_dir()
+            .expect("Failed to get current working directory");
+        
+        // Create the database path in the current working directory
+        let db_path = current_dir.join("products.db");
+        
+        println!("Database path: {:?}", db_path);
+        
+        let conn = Connection::open(db_path)?;
         
         // Create table if it doesn't exist
         conn.execute(
@@ -119,6 +129,7 @@ async fn save_product(
 
 #[tauri::command]
 async fn get_products(state: State<'_, DatabaseState>) -> Result<Vec<Product>, String> {
+    println!("Rust: Getting products from database...");
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     
     let mut stmt = conn
@@ -160,18 +171,31 @@ async fn delete_product(id: i64, state: State<'_, DatabaseState>) -> Result<(), 
     Ok(())
 }
 
+#[tauri::command]
+async fn get_database_path() -> Result<String, String> {
+    let current_dir = env::current_dir()
+        .map_err(|e| e.to_string())?;
+    
+    let db_path = current_dir.join("products.db");
+    Ok(db_path.to_string_lossy().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let db_state = DatabaseState::new().expect("Failed to initialize database");
-    
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(db_state)
+        .setup(|app| {
+            let db_state = DatabaseState::new()
+                .expect("Failed to initialize database");
+            app.manage(db_state);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             save_product,
             get_products,
-            delete_product
+            delete_product,
+            get_database_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

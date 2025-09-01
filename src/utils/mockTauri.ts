@@ -195,5 +195,14 @@ export const mockTauriApi = {
 
 // Check if we're in Tauri environment
 export const isTauriEnvironment = () => {
-  return typeof window !== 'undefined' && '__TAURI__' in window;
+  if (typeof window === 'undefined') return false;
+  
+  // Check for multiple Tauri indicators
+  const windowAny = window as any;
+  return !!(
+    windowAny.__TAURI__ ||
+    windowAny.__TAURI_INTERNALS__ ||
+    windowAny.__TAURI_METADATA__ ||
+    (windowAny.navigator && windowAny.navigator.userAgent && windowAny.navigator.userAgent.includes('Tauri'))
+  );
 };
