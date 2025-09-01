@@ -7,6 +7,28 @@ html, body, #root {
   height: 100%;
 }
 
+/* Theme-aware root background */
+html[data-theme="dark"], 
+html[data-theme="dark"] body, 
+html[data-theme="dark"] #root {
+  background-color: #141414;
+}
+
+html[data-theme="light"], 
+html[data-theme="light"] body, 
+html[data-theme="light"] #root {
+  background-color: #ffffff;
+}
+
+/* Theme-aware app container background */
+html[data-theme="dark"] .app-container {
+  background-color: #141414;
+}
+
+html[data-theme="light"] .app-container {
+  background-color: #f5f5f5;
+}
+
 /* Container class for consistent layout - only when Ant Design Row/Col isn't sufficient */
 .container {
   width: 100%;
@@ -17,7 +39,6 @@ html, body, #root {
 /* Ant Design enhancements - only when built-in theming isn't enough */
 .ant-form-item-label > label {
   font-weight: 600;
-  color: #374151;
 }
 
 /* Custom animations for enhanced UX */

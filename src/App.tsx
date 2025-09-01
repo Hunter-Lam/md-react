@@ -3,9 +3,12 @@ import { Button, DatePicker, Form, FormProps, Input, InputNumber, Select, Row, C
 import dayjs from "dayjs";
 import { FormData, Product } from "./types";
 import { CATEGORIES } from "./constants";
-import { SourceInput, DiscountSection, ProductTable } from "./components";
+import { SourceInput, DiscountSection, ProductTable, ThemeToggle } from "./components";
+import { useTheme } from "./contexts/ThemeContext";
 
 const App: React.FC = () => {
+  const { isDarkMode } = useTheme();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [sourceTypeRule, setSourceTypeRule] = useState<any[]>([{ type: "url" }]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -41,41 +44,40 @@ const App: React.FC = () => {
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.defaultAlgorithm,
+        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: '#1890ff',
           borderRadius: 8,
-          colorBgLayout: '#f5f5f5',
         },
       }}
     >
-      <div style={{ 
+      <div className="app-container" style={{ 
         minHeight: '100vh', 
-        backgroundColor: '#f5f5f5', 
-        padding: '24px 0' 
+        padding: '24px 0'
       }}>
         <div className="container">
           <Row justify="center">
             <Col xs={24} sm={24} md={24} lg={24} xl={20} xxl={18}>
-            <Typography.Title 
-              level={1} 
-              style={{ 
-                textAlign: 'center', 
-                marginBottom: 32,
-                color: '#262626'
-              }}
-            >
-              產品管理系統
-            </Typography.Title>
+            <Row justify="space-between" align="middle" style={{ marginBottom: 32 }}>
+              <Col>
+                <Typography.Title 
+                  level={1} 
+                  style={{ 
+                    margin: 0
+                  }}
+                >
+                  產品管理系統
+                </Typography.Title>
+              </Col>
+              <Col>
+                <ThemeToggle />
+              </Col>
+            </Row>
             
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               <Card 
                 title="新增產品" 
-                bordered={false}
-                style={{ 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderRadius: 12
-                }}
+                variant="outlined"
               >
                 <Form
                   form={form}
@@ -210,11 +212,7 @@ const App: React.FC = () => {
               </Card>
 
               <Card 
-                bordered={false}
-                style={{ 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderRadius: 12
-                }}
+                variant="outlined"
               >
                 <ProductTable data={products} />
               </Card>

@@ -1,5 +1,5 @@
 import React from "react";
-import { InputNumber, Space, Typography } from "antd";
+import { InputNumber, Space, Typography, theme } from "antd";
 
 const { Text } = Typography;
 
@@ -8,6 +8,8 @@ interface DiscountInputProps {
 }
 
 const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
+  const { token } = theme.useToken();
+  
   const renderDiscountFormat = () => {
     switch (format) {
       case "折扣":
@@ -20,7 +22,7 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
               precision={1} 
               placeholder="折扣值" 
             />
-            <Text style={{ padding: '4px 8px', backgroundColor: '#f5f5f5', border: '1px solid #d9d9d9', borderLeft: 0 }}>折</Text>
+            <Text style={{ padding: '4px 8px', backgroundColor: token.colorFillAlter, border: `1px solid ${token.colorBorder}`, borderLeft: 0 }}>折</Text>
           </Space.Compact>
         );
       
