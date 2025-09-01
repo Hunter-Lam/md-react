@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Form, Input, Select } from "antd";
+import { Button, Form, Input, Select, Space } from "antd";
 import { SOURCES } from "../constants";
 import { parseUrl } from "../utils/urlParser";
 
@@ -21,10 +21,10 @@ const SourceInput: React.FC<SourceInputProps> = ({ form, onSourceTypeChange }) =
     <Form.Item label="產品來源">
       <Form.List name="source">
         {() => (
-          <div className="flex items-center gap-1">
+          <Space.Compact style={{ width: '100%' }}>
             <Form.Item noStyle name="type" initialValue={SOURCES[0]}>
               <Select 
-                className="flex-1" 
+                style={{ width: 120 }}
                 options={SOURCES.map(v => ({ label: v, value: v }))} 
                 popupMatchSelectWidth={false}
                 onChange={(value: string) => {
@@ -36,14 +36,14 @@ const SourceInput: React.FC<SourceInputProps> = ({ form, onSourceTypeChange }) =
               />
             </Form.Item>
             <Form.Item noStyle name="address">
-              <Input placeholder="輸入連結或地址" />
+              <Input placeholder="輸入連結或地址" style={{ flex: 1 }} />
             </Form.Item>
             <Form.Item noStyle>
-              <Button className="ml-3" type="primary" onClick={handleParseUrl}>
+              <Button type="primary" onClick={handleParseUrl}>
                 解析
               </Button>
             </Form.Item>
-          </div>
+          </Space.Compact>
         )}
       </Form.List>
     </Form.Item>

@@ -1,5 +1,7 @@
 import React from "react";
-import { InputNumber } from "antd";
+import { InputNumber, Space, Typography } from "antd";
+
+const { Text } = Typography;
 
 interface DiscountInputProps {
   format: string;
@@ -10,128 +12,128 @@ const DiscountInput: React.FC<DiscountInputProps> = ({ format }) => {
     switch (format) {
       case "折扣":
         return (
-          <div className="flex items-center gap-1">
+          <Space.Compact>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               max={10} 
               precision={1} 
               placeholder="折扣值" 
             />
-            折
-          </div>
+            <Text style={{ padding: '4px 8px', backgroundColor: '#f5f5f5', border: '1px solid #d9d9d9', borderLeft: 0 }}>折</Text>
+          </Space.Compact>
         );
       
       case "滿金額折":
         return (
-          <div className="flex items-center gap-1">
-            滿
+          <Space size="small" wrap>
+            <Text>滿</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               precision={0} 
               placeholder="金額" 
             />
-            元
+            <Text>元</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 60 }} 
               min={0} 
               max={10} 
               precision={1} 
               placeholder="折扣" 
             />
-            折
-          </div>
+            <Text>折</Text>
+          </Space>
         );
       
       case "滿件折":
         return (
-          <div className="flex items-center gap-1">
-            滿
+          <Space size="small" wrap>
+            <Text>滿</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 60 }} 
               min={0} 
               precision={0} 
               placeholder="件數" 
             />
-            件
+            <Text>件</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 60 }} 
               min={0} 
               max={10} 
               precision={1} 
               placeholder="折扣" 
             />
-            折
-          </div>
+            <Text>折</Text>
+          </Space>
         );
       
       case "每滿減":
         return (
-          <div className="flex items-center gap-1">
-            每滿
+          <Space size="small" wrap>
+            <Text>每滿</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               precision={0} 
               placeholder="金額" 
             />
-            元 減
+            <Text>元 減</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               precision={0} 
               placeholder="減額" 
             />
-            元
-          </div>
+            <Text>元</Text>
+          </Space>
         );
       
       case "滿減":
         return (
-          <div className="flex items-center gap-1">
-            滿
+          <Space size="small" wrap>
+            <Text>滿</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               precision={0} 
               placeholder="金額" 
             />
-            元 減
+            <Text>元 減</Text>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               precision={0} 
               placeholder="減額" 
             />
-            元
-          </div>
+            <Text>元</Text>
+          </Space>
         );
       
       case "首購":
       case "立減":
         return (
-          <div className="flex items-center gap-1">
+          <Space.Compact>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               precision={0} 
               placeholder="金額" 
             />
-            元
-          </div>
+            <Text style={{ padding: '4px 8px', backgroundColor: '#f5f5f5', border: '1px solid #d9d9d9', borderLeft: 0 }}>元</Text>
+          </Space.Compact>
         );
       
       case "紅包":
         return (
-          <div className="flex items-center gap-1">
+          <Space.Compact>
             <InputNumber 
-              style={{ width: "100%" }} 
+              style={{ width: 80 }} 
               min={0} 
               placeholder="金額" 
             />
-            元
-          </div>
+            <Text style={{ padding: '4px 8px', backgroundColor: '#f5f5f5', border: '1px solid #d9d9d9', borderLeft: 0 }}>元</Text>
+          </Space.Compact>
         );
       
       default:
