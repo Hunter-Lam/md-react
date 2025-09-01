@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Button, DatePicker, Form, FormProps, Input, InputNumber, Select, Row, Col, Card, Space, Typography, ConfigProvider, theme } from "antd";
+import { Button, DatePicker, Form, FormProps, Input, InputNumber, Select, Row, Col, Card, Space, Typography, ConfigProvider, theme, message } from "antd";
 import dayjs from "dayjs";
-import { FormData, Product } from "./types";
+import { invoke } from "@tauri-apps/api/core";
+import { mockTauriApi, isTauriEnvironment } from "./utils/mockTauri";
+import { FormData, Product, ProductInput } from "./types";
 import { CATEGORIES } from "./constants";
 import { SourceInput, DiscountSection, ProductTable, ThemeToggle } from "./components";
 import { useTheme } from "./contexts/ThemeContext";
@@ -12,21 +14,59 @@ const App: React.FC = () => {
   const [form] = Form.useForm();
   const [sourceTypeRule, setSourceTypeRule] = useState<any[]>([{ type: "url" }]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const onFinish: FormProps<FormData>["onFinish"] = (values) => {
+  // Load products from database on component mount
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const api = isTauriEnvironment() ? { invoke } : mockTauriApi;
+      const result = await api.invoke<Product[]>("get_products");
+      setProducts(result);
+    } catch (error) {
+      console.error("Failed to load products:", error);
+      message.error("加載產品失敗");
+    }
+  };
+
+  const onFinish: FormProps<FormData>["onFinish"] = async (values) => {
     console.log("表單提交成功:", values);
+    setLoading(true);
     
-    // 將表單數據轉換為產品並添加到列表
-    const newProduct: Product = {
-      url: values.source?.address || "",
-      title: values.title || "",
-      brand: values.brand || "",
-      type: values.type || "",
-      price: values.price || 0,
-    };
-    
-    setProducts(prev => [...prev, newProduct]);
-    form.resetFields();
+    try {
+      // Prepare product data for saving
+      const productInput: ProductInput = {
+        url: values.source?.address || "",
+        title: values.title || "",
+        brand: values.brand || "",
+        type: values.type || "",
+        price: values.price || 0,
+        specification: values.specification || "",
+        date: values.date ? dayjs(values.date).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+        remark: values.remark || "",
+      };
+      
+      // Save to database via Tauri or mock
+      const api = isTauriEnvironment() ? { invoke } : mockTauriApi;
+      const savedProduct = await api.invoke<Product>("save_product", { product: productInput });
+      
+      // Update local state
+      setProducts(prev => [savedProduct, ...prev]);
+      
+      // Reset form
+      form.resetFields();
+      form.setFieldValue("date", dayjs());
+      
+      message.success("產品保存成功！");
+    } catch (error) {
+      console.error("Failed to save product:", error);
+      message.error("保存產品失敗");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onFinishFailed: FormProps<FormData>["onFinishFailed"] = (errorInfo) => {
@@ -35,6 +75,18 @@ const App: React.FC = () => {
 
   const handleSourceTypeChange = (rule: any[]) => {
     setSourceTypeRule(rule);
+  };
+
+  const handleDeleteProduct = async (id: number) => {
+    try {
+      const api = isTauriEnvironment() ? { invoke } : mockTauriApi;
+      await api.invoke("delete_product", { id });
+      setProducts(prev => prev.filter(p => p.id !== id));
+      message.success("產品刪除成功！");
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      message.error("刪除產品失敗");
+    }
   };
 
   useEffect(() => {
@@ -198,11 +250,15 @@ const App: React.FC = () => {
                     type="primary" 
                     htmlType="submit"
                     size="large"
+                    loading={loading}
                   >
                     提交
                   </Button>
                   <Button 
-                    onClick={() => form.resetFields()}
+                    onClick={() => {
+                      form.resetFields();
+                      form.setFieldValue("date", dayjs());
+                    }}
                     size="large"
                   >
                     清空
@@ -215,7 +271,10 @@ const App: React.FC = () => {
               <Card 
                 variant="outlined"
               >
-                <ProductTable data={products} />
+                <ProductTable 
+                  data={products} 
+                  onDelete={handleDeleteProduct}
+                />
               </Card>
             </Space>
             </Col>

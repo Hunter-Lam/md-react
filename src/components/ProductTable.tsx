@@ -1,16 +1,27 @@
 import React from "react";
-import { Table, TableColumnsType, Typography, Tag, Space, theme } from "antd";
-import { LinkOutlined } from "@ant-design/icons";
+import { Table, TableColumnsType, Typography, Tag, Space, theme, Button, Popconfirm } from "antd";
+import { LinkOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Product } from "../types";
+import dayjs from "dayjs";
 
 interface ProductTableProps {
   data?: Product[];
+  onDelete?: (id: number) => void;
 }
 
-const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
+const ProductTable: React.FC<ProductTableProps> = ({ data = [], onDelete }) => {
   const { token } = theme.useToken();
   
   const columns: TableColumnsType<Product> = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 60,
+      render: (id: number) => (
+        <Typography.Text type="secondary">#{id}</Typography.Text>
+      ),
+    },
     {
       title: "網址",
       dataIndex: "url",
@@ -66,8 +77,80 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
       align: 'right',
       render: (price: number) => (
         <Typography.Text strong style={{ color: '#f5222d' }}>
-          ¥{price?.toFixed(2) || '0.00'}
+          ¥{typeof price === 'number' ? price.toFixed(2) : '0.00'}
         </Typography.Text>
+      ),
+    },
+    {
+      title: "規格",
+      dataIndex: "specification",
+      key: "specification",
+      width: 150,
+      ellipsis: true,
+      render: (specification: string) => (
+        <Typography.Text type="secondary">
+          {specification || '-'}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "日期",
+      dataIndex: "date",
+      key: "date",
+      width: 120,
+      render: (date: string) => (
+        <Typography.Text>
+          {date ? dayjs(date).format('YYYY-MM-DD') : '-'}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "備註",
+      dataIndex: "remark",
+      key: "remark",
+      width: 150,
+      ellipsis: true,
+      render: (remark: string) => (
+        <Typography.Text type="secondary">
+          {remark || '-'}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "創建時間",
+      dataIndex: "created_at",
+      key: "created_at",
+      width: 150,
+      render: (created_at: string) => (
+        <Typography.Text type="secondary">
+          {created_at ? dayjs(created_at).format('YYYY-MM-DD HH:mm') : '-'}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "操作",
+      key: "action",
+      width: 80,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space>
+          {onDelete && record.id && (
+            <Popconfirm
+              title="確認刪除"
+              description="確定要刪除這個產品嗎？"
+              onConfirm={() => onDelete(record.id!)}
+              okText="確認"
+              cancelText="取消"
+            >
+              <Button 
+                type="text" 
+                danger 
+                size="small"
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          )}
+        </Space>
       ),
     },
   ];
@@ -75,12 +158,12 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       <Typography.Title level={3} style={{ marginBottom: 16 }}>
-        產品列表
+        產品列表 ({data.length} 項)
       </Typography.Title>
       <Table<Product>
         columns={columns}
         dataSource={data}
-        rowKey="url"
+        rowKey={(record) => record.id?.toString() || record.url}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
@@ -89,7 +172,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ data = [] }) => {
           showTotal: (total, range) => 
             `第 ${range[0]}-${range[1]} 項，共 ${total} 項`,
         }}
-        scroll={{ x: 800 }}
+        scroll={{ x: 1200 }}
         size="middle"
         bordered={false}
       />
