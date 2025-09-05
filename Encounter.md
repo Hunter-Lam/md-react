@@ -6436,7 +6436,7 @@ EOF
 chmod +x command.sh
 ```
 
-#### [Linux/Unix/MacOS] generate a Linux script
+#### [Linux/Unix/MacOS] test 80/443 port
 
 ```shell
 telnet [host] [port]
@@ -6478,6 +6478,55 @@ Refer To
 [curl - Tutorial](https://curl.se/docs/tutorial.html) 
 
 [http - Are HTTP_PROXY, HTTPS_PROXY and NO_PROXY environment variables standard? - Super User](https://superuser.com/questions/944958/are-http-proxy-https-proxy-and-no-proxy-environment-variables-standard) 
+
+#### [Linux/Unix/MacOS] lazygit
+
+GitHub: https://github.com/jesseduffield/lazygit
+
+```shell
+brew install lazygit
+
+# run inside a git repository
+lazygit
+# Cmd + C to exit
+```
+
+Get Started 
+
+╭─[1]─Status──────────────╮╭─[0]─Diff──────────────────────────────────────────╮
+│✓ <project> → <branch>   ││No changed files                                   │
+╰╭─────────────────────────────────────────────────────────────────────────────╮
+╭│Thanks for using lazygit! Seriously you rock. Three things to share with you:│
+││                                                                             │
+││ 1) If you want to learn about lazygit's features, watch this vid:           │
+││      https://youtu.be/CPLdltN7wgE                                           │
+││                                                                             │
+││ 2) Be sure to read the latest release notes at:                             │
+││      https://github.com/jesseduffield/lazygit/releases                      │
+││                                                                             │
+││ 3) If you're using git, that makes you a programmer! With your help we can  │
+││make                                                                         │
+╰│    lazygit better, so consider becoming a contributor and joining the fun at│
+╭│      https://github.com/jesseduffield/lazygit                               │
+││    You can also sponsor me and tell me what to work on by clicking the      │
+╰│donate                                                                       │
+╭│    button at the bottom right.                                              │
+││    Or even just star the repo to share the love!                            │
+╰│                                                                             │
+╭│Press <enter> to get started.                                                │
+│╰─────────────────────────────────────────────────────────────────────────────╯
+╰──────────────────1 of 2─╯╰───────────────────────────────────────────────────╯
+Confirm: <enter> | Close/Cancel: <esc> | …            Donate Ask Question 0.54.2
+
+
+#### [Linux/Unix/MacOS] neovim
+
+Official site: https://neovim.io/
+
+```shell
+brew install neovim
+```
+
 
 
 #### [Vi/Vim] Comment or Uncomment Multiple Lines
